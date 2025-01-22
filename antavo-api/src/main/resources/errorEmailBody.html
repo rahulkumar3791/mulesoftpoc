@@ -1,7 +1,0 @@
-<b>DateTime : #[now() as String {format: "dd-MM-yyyy hh:mm:ss"}]</b><br>
-<b>Interface Name : Antavo-api-#[p('prop.env')]</b><br>
-<b>IP :  #[server.ip] </b><br>
-<b>CustomerId :  #[vars.customerId] </b><br>
-<b>Flow Name : #[vars.flowName]</b><br>
-<b>API Endpoint URL : #[p('antavo.mule.app.url')]#[vars.flowName] </b><br>
-<b>Error : #[write(payload,'application/json')] </b><br>

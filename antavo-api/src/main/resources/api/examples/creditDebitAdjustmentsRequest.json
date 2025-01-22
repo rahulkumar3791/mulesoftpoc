@@ -1,9 +1,0 @@
-{
-    "customer": "profile47064541",
-    "action": "credit_debit",
-    "data": {
-        "transaction_id": "s12707690010",
-        "amount": 40,
-        "note": "adjusted"
-    }
-}

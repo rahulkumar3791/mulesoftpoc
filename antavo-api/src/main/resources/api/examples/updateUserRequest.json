@@ -1,9 +1,0 @@
-{
-    "customer": "test_account1",
-    "action": "profile",
-    "data": {
-        "email": "testaccount1@gmail.com",
-        "first_name":"RajaramTest",
-        "last_name": "PasupathyTest"
-    }
-}

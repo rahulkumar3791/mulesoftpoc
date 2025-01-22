@@ -1,6 +1,0 @@
-#** GENERATED CONTENT ** Mule Application Deployment Descriptor
-#Fri Nov 16 20:20:25 IST 2018
-redeployment.enabled=true
-encoding=UTF-8
-domain=default
-config.resources=auditService.xml,businessLogic.xml,common-control-table-flow-lastrun.xml,config.xml,dbConfiguration.xml,endpoints.xml,errorHandling.xml,exceptionhandling.xml,exceptionhandling_failureRetry.xml,exceptionhandling_failureRetry_PurchaseRequisition.xml,exceptionhandling_project-site-creation.xml,exceptionhandling_project-status.xml,exceptionhandling_purchase-requisition.xml,leaseDataLogic.xml,project-site-creation-impl.xml,project-site-creation-siteId-impl.xml,project-status-impl.xml,project-status-ttid-impl.xml,purchase-requisition-ttid.xml,purchase-requistion.xml,resources.xml,vendordatalogic.xml
