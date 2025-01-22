@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="740152a5-c3cf-4130-b22b-d86507774a96" />
+	<flow name="jms-queue-topic-pocFlow" doc:id="cf5da50e-1887-465b-b509-182694ea3bc5" >
+		<jms:publish doc:name="Publish" doc:id="d701f78d-132a-4da7-9fb7-fa9ab37b2cad" config-ref="JMS_Config"/>
+	</flow>
+</mule>

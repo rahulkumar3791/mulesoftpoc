@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="edificio-scheduler" doc:id="140b7064-74a1-416e-bc9c-2a32e6620c7b" >
+		<scheduler doc:name="Scheduler" doc:id="7488552d-4541-4d49-9306-6b9cffcdc159" disallowConcurrentExecution="true">
+			<scheduling-strategy >
+				<cron expression="${edificio.cron}" timeZone="${edificio.timezone}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Choice" doc:id="2ca2bd73-70bb-4ab8-bf3f-be1ec8dd249c" >
+			<when expression="#[p('edificio.cron.enable')]">
+				<flow-ref doc:name="Edificio-mainFlow" doc:id="510eb5c4-2d49-4f87-bc2f-ca9a9e27078b" name="update-edificiosFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="1c56be28-3423-42df-92f3-12ee13ecc6ec" message='#["### Edificio Flow Disabled via Trigger ###"]'/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="sitios-scheduler" doc:id="64565041-8824-4ec1-9867-89351780f1be" >
+		<scheduler doc:name="Scheduler" doc:id="e1abf3a5-3a07-4851-af41-382ae3e4c531" disallowConcurrentExecution="true">
+			<scheduling-strategy >
+				<cron expression="${sitios.cron}" timeZone="${sitios.timezone}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Choice" doc:id="fffa8941-683b-4020-8591-1044605c05d2" >
+			<when expression="#[p('sitios.cron.enable')]">
+				<flow-ref doc:name="Sitios mainFlow" doc:id="e6161f86-1b3a-4663-b015-f71ed0c5184c" name="update-sitiosFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="1e5fd2a7-0554-47e2-8db5-db93665d94bd" message='#["### Sitios Flow Disabled via Trigger ###"]'/>
+			</otherwise>
+		</choice>
+	</flow>
+	
+	<!-- #############################  Endpoints List  ########################## -->
+	<flow name="edificio-endpoint" doc:id="dceb0a97-992a-43d7-9df2-6a133c2356fd">
+		<http:listener doc:name="Listener" doc:id="1a0f3bfa-3899-4b3b-917f-11f2cb47b159" path="${edificio.url}" config-ref="HTTP_Listener"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="01a05690-5b1c-4fae-970b-8172eeab984b" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="Edificio-mainFlow" doc:id="a0bf9d8d-b5c7-488c-978a-f0ab678265ac" name="update-edificiosFlow"/>
+		<set-payload value='#[output application/json
+---
+{
+	status: "Completed",
+	message: "Edificio  Completed"
+}]' doc:name="Response" doc:id="695233a8-0f6d-498e-a0fd-d3448d7c2cf8" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2e558653-41c8-4628-a127-22b2a8515c77" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="ea5d46ef-1746-4d55-aca8-928882367068" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a98bc60b-c0cd-4183-af26-f7f0e66bd6b9" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="fcd1a7a2-d610-4ecc-b3ac-a8ec4d9ea08e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('current.project.id') default "I-436",
+	service: p('current.project.name') default "atc-mexico-fiber",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+	<flow name="sitios-endpoint" doc:id="3d6dc2bc-ff02-402c-9142-3409a6c4b21f">
+		<http:listener doc:name="Listener" doc:id="e164b724-a638-4207-9036-952f6bbda66a" config-ref="HTTP_Listener" path="${sitios.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="e18e4759-a26a-4be2-bd35-82cf3bbea60c" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="Sitios mainFlow" doc:id="0fb35ef5-d6b3-4c6d-b1cb-d3b51261d0a2" name="update-sitiosFlow"/>
+		<set-payload value='#[output application/json
+---
+{
+	status: "Completed",
+	message: "Sitios Completed"
+}]' doc:name="Response" doc:id="4a61f59e-ea8f-4bf8-ab30-aaa2de50004a" />
+	<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="53cda0cb-065a-4a11-af20-1b6348158876" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="3c2d47f3-4f57-4a01-92ea-c7f43f7d7528" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ff12c3b1-51b2-41de-8531-b324602a994c" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="af3ee55e-dafb-493a-a824-324e1c8f97a7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('current.project.id') default "I-437",
+	service: p('current.project.name') default "atc-mexico-fiber",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+</flow>
+	<error-handler name="default-error-handler" doc:id="2278417e-6911-4024-be33-288b0ed14620" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="328cd73f-bad5-43b9-96e2-48d6ac6c8798" type="ANY">
+			<ee:transform doc:name="Transform Message" doc:id="55636ce3-731c-4d90-a309-47641b325fef" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('current.project.id'),
+	service: p('current.project.name') default "atc-mexico-fiber",
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<flow name="get:\rest\health:endpoints-config">
+		<!-- <http:listener doc:name="Listener" doc:id="2537bab3-cf6c-4868-a32c-ad3a2470ea71" path="/api/rest/health"/> -->
+		<http:listener doc:name="Listener" doc:id="bef451a7-5424-44bc-89f3-c440a345424b" config-ref="HTTP_Listener" path="/health"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="358d4319-5f80-40cc-a289-1886af6f9f55" realm="mule" >
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="health:\\health-main" doc:id="c862ef88-4794-42af-ae49-51b4261599d9" name="health:\\health-main"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="c90055bd-7d99-4310-b528-6bc87da77283" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7f558ae5-bd59-46b1-8ede-40db1b812eaf" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="7c3f8048-7458-4b25-95eb-5de47a226a4c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c3be2c03-50f8-48e1-921e-f0fcab8ea1cb" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="7a34eb57-c3d9-4480-b43d-f4969277a13b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+		
+	</flow>
+	
+	
+	
+</mule>

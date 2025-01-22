@@ -1,0 +1,91 @@
+<!-- [STUDIO:"Transform Message"]<?xml version="1.0" encoding="UTF-8"?> [STUDIO] -->
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7a7aaab3-6bfd-49a4-b047-cce400af07de" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="f56e5c65-826e-4d1e-aeb7-cc7b57517523" >
+		<http:request-connection host="localhost" />
+	</http:request-config>
+	<flow name="scatter-gather-exceptionhandlingFlow" doc:id="804ab170-617a-4198-9076-2b7d4e446da1" >
+		<http:listener doc:name="Listener" doc:id="22baf688-a943-4d28-ab98-89f72e3bae8c" config-ref="HTTP_Listener_config" path="/scatter-gather"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="f060e568-e1b8-4c28-bd1f-9ace613703f3" >
+			<route >
+				<file:read doc:name="Read" doc:id="83473327-439c-4600-882b-db45fe8bfec6" path="D:\Mule-2023\Scatter-gather\1\1.csv"/>
+				<logger level="INFO" doc:name="Logger" doc:id="62e1c2b4-add1-4b88-9354-0b765801ad5d" message="#[payload]"/>
+			</route>
+			<route >
+				<file:read doc:name="Read" doc:id="a9af85ae-9709-434f-9ace-af8da5f050e1" path="D:\Mule-2023\Scatter-gather\2\2.csv"/>
+				<logger level="INFO" doc:name="Logger" doc:id="113b27ec-9c68-4fc1-8362-396869a7e01c" message="#[payload]"/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="71554e53-4a75-4ebd-8500-f6b81b8b9ace" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b15d7a48-43f2-42ab-b0cc-926b9259458b" message="#[payload[0].payload]"/>
+		<ee:transform doc:name="Two Array Response" doc:id="d3bf32f5-f307-4d4c-b8f9-a6f44e74e9d1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload..payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="19391f98-e526-4e75-a788-efab3bcd07a3" message="#[payload]"/>
+		<ee:transform doc:name="Flatten Array Response" doc:id="aa1c9fc3-66cb-4944-b675-707d68e8adb4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c91a89a1-a5aa-4163-8bb8-cab65cd1a3e0" message="#[payload]"/>
+	</flow>
+	<flow name="scatter-gather-exceptionhandlingFlow1" doc:id="34beecfd-e66c-468f-8799-c5ba0d384485" >
+		<http:listener doc:name="Listener" doc:id="3fa4ae98-9e8e-410e-ab0a-bda95fac76ca" config-ref="HTTP_Listener_config" path="/test" allowedMethods="POST"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="ebf8e6d6-d8d2-4e8a-ad71-0b4abb9774af" >
+			<route >
+				<file:write doc:name="Write" doc:id="0de102d2-317e-486a-9e97-28264a900a97" path="D:\Mule-2023\Scatter-gather\1\1.json"/>
+			</route>
+			<route >
+				<http:request method="POST" doc:name="Request" doc:id="8a0e736f-0a1f-4bd2-8ae3-552ab9e5a5fa" url="http://localhost:8081/test1" config-ref="HTTP_Request_configuration" />
+			</route>
+			<route >
+				<set-payload value='#["Router-2"]' doc:name="Set Payload" doc:id="0fd338b4-fe8f-4ebc-8ebc-99c825bd48be" />
+			</route>
+			<route>
+				<try doc:name="Try" doc:id="1ba37361-8290-482c-b377-e6be6b40fb7a" >
+					<http:request method="GET" doc:name="Request" doc:id="c7eddaab-fc0f-4a45-b305-64bc2f3fd308" url="http://localhost:8081/test3" />
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="93cdeb44-b557-4568-9658-7d3f81f3dad0" >
+							<logger level="INFO" doc:name="Logger" doc:id="737effc6-f776-46db-afcb-7484c78b72a9" message="=====scatter gather error handling======= "/>
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="d4e8c39e-ac16-4723-923b-d7078bbbe3a7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="scatter-gather-exceptionhandlingFlow2" doc:id="01040078-5cc1-4a24-b425-44db7a938d65" >
+		<http:listener doc:name="Listener" doc:id="2f6bc41d-7c59-4557-87b9-9f12889bd6d3" config-ref="HTTP_Listener_config" path="/test1" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6ee65319-b58d-4dc2-8622-9c337911e733" message="#[payload]"/>
+	</flow>
+</mule>

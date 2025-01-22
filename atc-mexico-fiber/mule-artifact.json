@@ -1,0 +1,31 @@
+{
+	"configs": [
+		"config.xml",
+		"endpoints.xml",
+		"healthcheck.xml",
+		"email-audit-interface.xml",
+        "email-audit-service.xml",
+		"com/atc/edificio/update-edificio.xml",
+		"com/atc/sitios/update-sitios.xml"
+		],
+	"redeploymentEnabled": true,
+	"name": "atc-mexico-fiber",
+	"requiredProduct": "MULE_EE",
+	"minMuleVersion": "4.2.1",
+	"bundleDescriptorLoader": {
+		"attributes": {
+			"exportedResources": [
+                "src/main/resources/beans.xml"
+            ]
+		},
+		"id": "mule"
+	},
+	"secureProperties": [
+		"tls.key.password",
+		"tls.store.password",
+		"https.password",
+		"email.audit.db.password",
+		"cm.db.password",
+		"sam.db.password"
+		]
+}

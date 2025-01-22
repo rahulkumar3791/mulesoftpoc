@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="mule-templateFlow" doc:id="419c449f-d60f-4fb0-94dc-d2c1951ba489" >
+		<http:listener doc:name="Listener" doc:id="180c31e7-2a66-4fd6-81c7-1ecb4150be7c" config-ref="HTTP_Listener_config" path="${api.name.url}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="50c020f4-64e9-46f2-801c-cd57e71a0134" message="#[&quot;Env : &quot; ++ p('prop.env') ++ &quot; and project Is: &quot; ++ p('project.name')]"/>
+		<ee:transform doc:name="Transform Message" doc:id="0dbe5be6-5e90-4368-befd-875f4ef5a8dc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"id" : p('secure::api.client.secret.id'),
+	"secret" : p('secure::api.client.id')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

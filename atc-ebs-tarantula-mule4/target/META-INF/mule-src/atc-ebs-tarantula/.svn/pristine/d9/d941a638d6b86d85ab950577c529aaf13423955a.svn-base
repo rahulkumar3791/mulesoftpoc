@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<choice-exception-strategy
+		name="exceptionhandlingChoice_Exception_Strategy_failureRetry">
+		<catch-exception-strategy doc:name="Catch_Exception_Strategy"
+			when="#[exception.causedBy(org.mule.api.MessagingException)]">
+			<logger level="INFO" doc:name="Logger" message="#[exception.getStackTrace()]" />
+			<logger
+				message="Records Failed due to Messaging exception  ---------------&gt;#[payload]"
+				level="INFO" doc:name="Logger" />
+			<db:select config-ref="Oracle_Configuration" doc:name="Database">
+				<db:dynamic-query><![CDATA[SELECT RETRY_COUNT FROM XXATC.ATC_TT_FAILEDRECORDS WHERE TT_ID = '#[flowVars.ttId]']]></db:dynamic-query>
+			</db:select>
+			<set-variable variableName="failure_reason" value="#[exception.cause.message]"
+				doc:name="Variable" />
+			<choice doc:name="Choice"
+				doc:description="Critical - Place the Retry count in Property File">
+				<when expression="#[Integer.parseInt(payload[0].RETRY_COUNT) &lt;3]">
+					<set-variable variableName="retryCount"
+						value="#[Integer.parseInt(payload[0].RETRY_COUNT+1)] " doc:name="retryCount increment" />
+					<db:update config-ref="Oracle_Configuration" doc:name="UpdateFailedRecord">
+						<db:dynamic-query><![CDATA[UPDATE XXATC.ATC_TT_FAILEDRECORDS SET retry_count = '#[flowVars.retryCount]' WHERE TT_ID = '#[flowVars.ttId]' and FLOW_NAME ='#[flowVars.flowName]']]></db:dynamic-query>
+					</db:update>
+					<set-payload
+						value=" Retry count updated for &quot;#[flowVars.ttId]&quot;"
+						doc:name="Set Payload" />
+				</when>
+				<otherwise>
+					<logger message="============Maximum Retry Reached============="
+						level="INFO" doc:name="Logger- Maximum Retry Reached" />
+					<set-payload value="#[flowVars.ttId]   maximum retry attempt reached"
+						mimeType="text/plain" doc:name="Set Payload" />
+				</otherwise>
+			</choice>
+		</catch-exception-strategy>
+
+		<catch-exception-strategy doc:name="Catch_Exception_Strategy"
+			when="#[exception.causedBy(org.mule.api.expression.ExpressionRuntimeException)]">
+			<logger level="INFO" doc:name="Logger"
+				message="Records Failed due to runtime exception  ---------------&gt;#[payload]" />
+			<object-to-string-transformer doc:name="Object to String" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<set-variable variableName="errMsg"
+				value="Exception occurred at #[new java.util.Date().toString()]#[&quot;\r\n&quot;] Interface : #[flowVars.flowName] #[&quot;\r\n&quot;]  Exception: #[(exception.cause!=null)?(exception.cause.message):exception]"
+				doc:name="errMsg" />
+			<set-variable variableName="fullErrorMsg"
+				value="Exception occurred at #[new java.util.Date().toString()] #[&quot;\r\n&quot;] Interface : #[flowVars.flowName] #[&quot;\r\n&quot;]  Exception Details: #[org.mule.util.ExceptionUtils.getFullStackTrace(exception)]"
+				doc:name="fullErrorMsg" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+"to_address": p('emailID'),
+
+"body": flowVars.errMsg,
+
+"subject":'[' ++ p('current.environment') ++ '] [' ++ p('current.projectname') ++ '] [FAILURE] Notification', 
+
+"attachment_name":"attachment.txt",
+
+"attachment_content": flowVars.fullErrorMsg
+	
+}  
+]]></dw:set-payload>
+			</dw:transform-message>
+			<byte-array-to-object-transformer
+				doc:name="Byte Array to Object" />
+			<http:request config-ref="HTTP_EmailNotification" path="/email"
+				method="POST" doc:name="HTTP" />
+		</catch-exception-strategy>
+	</choice-exception-strategy>
+</mule>

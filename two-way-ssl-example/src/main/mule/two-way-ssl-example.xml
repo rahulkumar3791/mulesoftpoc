@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ba1b296f-7131-437e-9fa0-3639444ca600" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8082" >
+			<tls:context >
+				<tls:trust-store path="server-truststore.jks" password="mulesoft" type="jks" />
+				<tls:key-store type="jks" path="server-keystore.jks" keyPassword="mulesoft" password="mulesoft" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<http:listener-config name="Clinet_HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c6895fc5-ef6e-4db7-bc38-76ece833eba9" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="506e471a-8a8a-43be-81bd-91bbd47cd2d1" >
+		<http:request-connection protocol="HTTPS" host="localhost" port="8082" >
+			<tls:context >
+				<tls:trust-store path="client-truststore.jks" password="mulesoft" type="jks" />
+				<tls:key-store type="jks" path="client-keystore.jks" keyPassword="mulesoft" password="mulesoft" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<flow name="two-way-ssl-server-Flow" doc:id="51041e6a-7934-477e-854a-46cf4974857d" >
+		<http:listener doc:name="Listener" doc:id="aea23324-cbdd-4b9f-89f0-4b515b34be7f" config-ref="HTTP_Listener_config" path="/test"/>
+		<set-payload value='#["Tested Successfully"]' doc:name="Set Payload" doc:id="64649689-36ad-4d59-b718-e2adc3d46bc5" />
+	</flow>
+	<flow name="two-way-ssl-clientFlow" doc:id="fc1bdf9a-7215-4173-ba4d-ab7253db57f2" >
+		<http:listener doc:name="Listener" doc:id="a33b2647-a9c7-417a-9ce3-087e3f2d6755" config-ref="Clinet_HTTP_Listener_config" path="/test1"/>
+		<http:request method="GET" doc:name="Request" doc:id="bfa74d46-51d5-44f6-865f-b0efaaa59108" path="/test" config-ref="HTTP_Request_configuration"/>
+	</flow>
+</mule>

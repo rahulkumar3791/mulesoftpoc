@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="ebs-getLandLeaseData-flow" doc:id="4f52da01-54ae-41ba-bc99-547b6057d8bd" >
+		<choice doc:name="Choice" doc:id="eac504a3-d3d3-454c-ba46-dfcbdca3b61c" >
+			<when expression='#[(vars.siteId != null and vars.siteId != "")]'>
+				<logger level="INFO" doc:name="Log Request Data" doc:id="81a39f85-8712-48df-8591-ac0759ebd4c2" message="#['[GetLandLeaseData][Data Requested for siteId :' ++ write(vars.siteId,'appliction/java') default &quot;&quot; ++ ']']"/>
+				<set-variable value="#[vars.siteId]" doc:name="Set requestData" doc:id="62d91911-a10c-44d1-93e9-ded8299336ca" variableName="requestData"/>
+				<db:stored-procedure doc:name="Get Land Lease Data" doc:id="83ce2c5f-ede2-4a8a-b09e-fea6655c4e72" config-ref="Oracle_Configuration">
+					<db:sql>{ :result = call  XXATC.ATC_PN_IND_TT_UTILS_PKG.GET_LAND_LEASE_DATA(:requestData) }</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+  "requestData" : vars.requestData
+}]]]></db:input-parameters>
+					<db:output-parameters >
+						<db:output-parameter key="result" customType="CURSOR" />
+					</db:output-parameters>
+				</db:stored-procedure>
+				<set-variable value="#[sizeOf(payload.result)]" doc:name="Set Record Count Value" doc:id="feff963a-468f-4650-95c8-74b1afa0f0cd" variableName="recordCount"/>
+				<choice doc:name="Data Found?" doc:id="5ad0cdb5-f188-4eee-8773-46d40148427b" >
+					<when expression="#[sizeOf(payload)&gt;0]">
+						<set-payload value="#[payload.result]" doc:name="Set Payload" doc:id="2fdd91ca-ea17-4a90-8347-adf892a4f4ef" />
+						<ee:transform doc:name="Transform Message" doc:id="77916f0d-c0fb-49ac-b60b-ee18dfc80caf">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map(payload,idx) -> {
+
+ globalSiteId:payload.GLOBAL_SITE_ID,
+ rentAmount:payload.RENT_AMOUNT            
+ }]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<ee:transform doc:name="SOAP Response" doc:id="d59141b9-5e22-4ca0-989a-c3567b2c48c1">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output text/xml writeDeclaration=false
+ 
+ns soap http://schemas.xmlsoap.org/soap/envelope/
+ns ns2 http://land.lease.ebs.atc.com/
+---
+soap#Envelope @():
+ {
+   soap#Body :{
+    ns2#getLandLeaseDataResponse:{
+       response:{
+          header:{
+            statusCode:"SUCCESS",
+            statusDescription:"SUCCESS"
+          },
+          landLeaseDetails:{
+            landLeaseData:payload
+          }
+     }
+    }
+   }
+  }]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<set-variable value="#[payload]" doc:name="Set response" doc:id="52d01e1d-e581-4987-a151-0bf21cdaf225" variableName="response"/>
+						<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="6e8e041b-07f6-4bad-ae66-4f6d692e6364" variableName="responseTime"/>
+						<logger level="INFO" doc:name="Logger" doc:id="5bb908e8-220d-4e36-b2a7-bb2a1aafd3d3" message="#['[Get Land Lease Data] ' ++ vars.responseTime default 0 ++ ' ms']"/>
+						<ee:transform doc:name="Audit payload" doc:id="bcd05abc-9fb1-46db-b89d-0976586d118d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Land Lease Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " : "siteId : " ++ vars.requestData default "",
+	  "Record Count " : vars.recordCount,
+	  "Status " : "Success"
+     }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="fd6a9bb1-eb61-4349-aaac-8c167b64bab4" message="####### [GetLandLeaseData][No data extracted for siteId : #[siteId] - Count : 0] #############"/>
+						<ee:transform doc:name="SOAP Response" doc:id="eda52dfb-c47a-4ca5-a63e-63e4d9534560" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output text/xml writeDeclaration=false
+ 
+ns soap http://schemas.xmlsoap.org/soap/envelope/
+ns ns2 http://land.lease.ebs.atc.com/
+---
+soap#Envelope @():
+ {
+   soap#Body :{
+    ns2#getLandLeaseDataResponse:{
+       response:{
+          header:{
+            statusCode:"SUCCESS_NO_DATA_FOUND",
+            statusDescription:"No Data found"
+       }
+     }
+    }
+   }
+  }]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<ee:transform doc:name="Audit Payload" doc:id="790a8c76-1a06-4088-bd23-fc4854e8cd06" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Land Lease Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " : "siteId : " ++ vars.requestData default "",
+	  "Record Count " : vars.recordCount,
+	  "Status " : "SUCCESS_NO_DATA_FOUND"
+     }
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
+				<flow-ref doc:name="call-audit-serviceFlow" doc:id="636d8b30-7357-4009-a12e-f6782d4d82e8" name="call-audit-serviceFlow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="b9a4ffaf-b374-40b8-a46f-041ade48ff41" message="####### Get LandLeaseData siteId payload is null #############"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow doc:id="4a5d9c00-22b4-46e4-aa22-b59775c458aa" name="tarantula-InsertOrdersFlow">
+		<logger level="INFO" doc:name="Logger" doc:id="851897c8-8bcc-4b0e-84f2-5cebae36ae4c" message="---------tarantula-inboundService flow is started-----------"/>
+		<ee:transform doc:name="Transform Message" doc:id="baa75214-be06-4f64-9412-71bad00260ba" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[sizeOf(payload)]" doc:name="Set size" doc:id="add36a5d-0067-4161-996e-490690454f21" variableName="size"/>
+		<foreach doc:name="For Each" doc:id="123927d5-824e-404f-9a0e-1f45fea1a3c1" >
+			<set-variable value="#[[BoqID: payload.BoqID,BoqLineID: payload.BoqLineID,ItemCode: payload.ItemCode,NeedbyDate: payload.NeedbyDate,GlobalSiteID: payload.GlobalSiteID,CustomerName: payload.CustomerName,SupplierName: payload.SupplierName,Quantity: payload.Quantity,ServicePurpose: payload.ServicePurpose,ServiceDesc: payload.ServiceDesc,Requestor: payload.Requestor,RequestDate: payload.RequestDate,UnitPrice: payload.UnitPrice,UOMCode: payload.UOMCode]]" doc:name="Set requestData" doc:id="f736591a-6dc6-4b4d-bcbc-96d6c2c70396" variableName="requestData"/>
+			<db:insert doc:name="Insert into Staging Table" doc:id="9fdb39e5-d91a-41f1-9258-d5a263147d38" config-ref="Oracle_Configuration">
+				<db:sql >insert into XXEXT.ATC_INV_IND_TT_STG(BOQ_ID,BOQ_LINE_ID,ITEM_CODE,NEED_BY_DATE,GLOBAL_SITE_ID,CUSTOMER_NAME,SUPPLIER_NAME,QUANTITY,PURPOSE_OF_SERVICE,DESCRIPTION_OF_SERVICE,REQUESTOR,REQUEST_DATE,UNIT_PRICE,UOM_CODE) values (:BoqID,:BoqLineID,:ItemCode,:NeedbyDate,:GlobalSiteID,:CustomerName,:SupplierName,:Quantity,:ServicePurpose,:ServiceDesc,:Requestor,:RequestDate,:UnitPrice,:UOMCode)
+</db:sql>
+				<db:input-parameters ><![CDATA[#[{
+"BoqID" : payload.BoqID,
+"BoqLineID" : payload.BoqLineID,
+"ItemCode" :payload.ItemCode,
+"NeedbyDate":payload.NeedbyDate,
+"GlobalSiteID":payload.GlobalSiteID,
+"CustomerName":payload.CustomerName,
+"SupplierName":payload.SupplierName,
+"Quantity":payload.Quantity,
+"ServicePurpose" : payload.ServicePurpose,
+"ServiceDesc":payload.ServiceDesc,
+"Requestor":payload.Requestor,
+"RequestDate":payload.RequestDate,
+"UnitPrice":payload.UnitPrice,
+"UOMCode":payload.UOMCode
+}]]]></db:input-parameters>
+			</db:insert>
+			<set-variable value="#['&quot;service&quot;: &quot;' + &quot;Insert Orders&quot; + '&quot; , &quot;requesterIp&quot;: &quot;' ++ vars.ip ++ '&quot; ,&quot;Request Data&quot;:&quot;' ++ vars.requestData ++'&quot;,&quot;status&quot;: &quot;Success&quot;']" doc:name="Set dataDetails" doc:id="7c63eb12-3cbe-40ff-9f40-b438938be9ce" variableName="dataDetails"/>
+			<ee:transform doc:name="Audit Payload" doc:id="fa00c5ee-7940-485a-b5e7-ec178073e7e8" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": ["code": "0" , "id": "", "message": "COMPLETE"],
+   	      "dataDetails" : vars.dataDetails
+         }
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<flow-ref doc:name="call-audit-serviceFlow" doc:id="6a7349db-f383-41d6-8c16-7394d3fc88ca" name="call-audit-serviceFlow"/>
+		</foreach>
+		<logger level="INFO" doc:name="Log Data Inserted" doc:id="d55fd2f0-ec5d-4040-bce3-472ef0ddb9c8" message="[SetOrders][PayloadCount : #[vars.size][Data successfully sent to EBS R12]"/>
+		<set-variable value="#[now().milliseconds]" doc:name="Set Response Time" doc:id="2e943618-3c6b-4cd2-9d4d-0ac9b0b84931" variableName="responseTime"/>
+		<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Total Response Time Calculation" doc:id="f6584f75-c5ec-4632-bbc8-80c7a3125d08" variableName="totalTime"/>
+		<logger level="INFO" doc:name="Log Total Time" doc:id="fd48bd27-4f8e-4a7f-837f-0ade90432e7f" message="#['[SetOrders][TotalTime :' ++ vars.totalTime ++ ']']"/>
+		<logger level="INFO" doc:name="Logger" doc:id="37bde01d-4fe8-466c-99aa-c073a2a2a534" message="---------tarantula-inboundService flow is completed-----------"/>
+	</flow>
+</mule>

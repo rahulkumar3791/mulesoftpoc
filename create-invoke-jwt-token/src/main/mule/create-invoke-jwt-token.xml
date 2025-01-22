@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ce47a253-9579-4cba-826c-019cfc5e787f" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="219924e0-7c94-4edc-95c4-2178506c7cfe" file="common.properties" />
+	<flow name="create-invoke-jwt-tokenFlow" doc:id="dfa92f0f-e01c-49ea-9a21-3bcd9e09bb42" >
+		<http:listener doc:name="Listener" doc:id="a8397972-f688-49db-8a1c-2cf91d127e3a" config-ref="HTTP_Listener_config" path="/createtoken"/>
+		<java:invoke-static doc:name="Invoke static" doc:id="d7616037-b332-4012-94a1-758f815aa5f1" class="com.test.mule.acs.ACSTokenGenerator" method="getToken()">
+		</java:invoke-static>
+		<ee:transform doc:name="Transform Message" doc:id="b66356b6-b6a0-483d-89bb-7b4d34663713" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+jwttoken: payload
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

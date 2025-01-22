@@ -1,0 +1,28 @@
+{
+	"configs": [
+		"config.xml",
+		"error-handling.xml",
+		"antavo-api.xml",
+		"com/zenni/antavo/api/users.xml",
+		"com/zenni/antavo/api/rewards.xml"
+	],
+	"redeploymentEnabled": true,
+	"name": "antavo-api",
+	"requiredProduct": "MULE_EE",
+	"minMuleVersion": "4.3.0",
+	"bundleDescriptorLoader": {
+		"attributes": {
+		
+		},
+		"id": "mule"
+	},
+	"classLoaderModelLoaderDescriptor": {
+		"id": "mule",
+		"attributes": {
+			"exportedPackages":["com.zenni.escher","com.zenni.escher.request","com.zenni.escher.util"]
+		}
+	},
+	"secureProperties": [
+		"tls.store.password"
+	 ]
+}

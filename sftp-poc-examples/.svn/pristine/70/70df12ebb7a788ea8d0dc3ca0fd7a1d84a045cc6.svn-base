@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto"
+	xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	<global-property doc:name="Global Property" doc:id="4ffb2423-e5b6-4b3b-bd05-1396b1a407dd" name="env" value="dev" />
+	<configuration-properties doc:name="Configuration properties" doc:id="c2e5e5d8-966b-49d5-9124-2b074696f1b4" file="resources-${env}.properties" />
+	<spring:config name="Spring_Config" doc:name="Spring Config" doc:id="107f3a81-726c-49ca-8bf2-ea28c98785e6" files="beans.xml" />
+	<spring:security-manager doc:name="Spring Security manager" doc:id="18288825-179b-4408-b80f-819157e656bb" >
+		<spring:delegate-security-provider name="memory-provider" delegate-ref="authenticationManager" />
+	</spring:security-manager>
+	<crypto:pgp-config name="Crypto_Pgp" doc:name="Crypto Pgp" doc:id="7b75343f-7c66-4bfa-8f0d-d6d8e538b8b1" publicKeyring="#[p('ftp.encryption.publickey.filepath')]">
+		<crypto:pgp-key-infos >
+			<crypto:pgp-asymmetric-key-info keyId="#[p('ftp.encryption.keyid')]" fingerprint="#[p('ftp.encryption.fingerprint')]" />
+		
+</crypto:pgp-key-infos>
+	</crypto:pgp-config>
+  <sftp:config name="SFTP_Config_AWS_Source" doc:name="SFTP Config" doc:id="c26b4119-73d3-4872-9ae5-c20327fdf23f" >
+		<sftp:connection host="${atc.aws.sftp.server.host}" port="${atc.aws.sftp.server.port}" username="${atc.aws.sftp.server.user}" password="${atc.aws.sftp.server.password}" connectionTimeoutUnit="MILLISECONDS" connectionTimeout="${sftp.response.timeout}" responseTimeoutUnit="MILLISECONDS" responseTimeout="${sftp.response.timeout}"/>
+	</sftp:config>
+	<sftp:config name="SFTP_ATC_ORACLE_Config" doc:name="SFTP Config" doc:id="0a401a04-8c4e-4ac9-aa2c-abfa888b1fa3" >
+		<sftp:connection host="${atc.oracle.sftp.server.host}" port="${atc.oracle.sftp.server.port}" username="${atc.oracle.sftp.server.user}" password="${atc.oracle.sftp.server.password}" connectionTimeoutUnit="MILLISECONDS" connectionTimeout="${sftp.response.timeout}" responseTimeoutUnit="MILLISECONDS" responseTimeout="${sftp.response.timeout}"/>
+	</sftp:config>
+</mule>

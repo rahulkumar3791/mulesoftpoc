@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+	<flow name="lookupFlow" doc:id="9aafda82-586c-40eb-8a4e-c311eea03a81" >
+		<ee:transform doc:name="Transform Message">
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+Mule::lookup('calling-from-lookup-flow', {test:'hello '})]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
+	</flow>
+	<flow name="calling-from-lookup-flow" >
+  <set-payload value='#[payload.test ++ "world"]' doc:name="Set Payload" />
+  <logger level="INFO" doc:name="Logger" message='#[payload]'/>
+</flow>
+	
+	</mule>

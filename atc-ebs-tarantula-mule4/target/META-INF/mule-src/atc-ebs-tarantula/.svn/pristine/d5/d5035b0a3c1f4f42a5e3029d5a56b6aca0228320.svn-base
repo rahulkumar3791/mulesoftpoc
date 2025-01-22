@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="ebs-getTenantLeaseData-flow" doc:id="e822bb53-61f3-4086-a7ce-6313d0710168" >
+		<choice doc:name="Payload is Null?" doc:id="d1397ed6-e71a-40e1-8ef9-ec1445f1b05d" >
+			<when expression='#[payload[0] != null and payload[0] != "" and payload[1] != null and payload[1] != ""]'>
+				<ee:transform doc:name="Set requestData" doc:id="bd529b88-e39c-41b7-a9ea-7f210d8ad5fb">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="requestData" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+siteId : payload[0], 
+customerNames : [payload[1],payload[2],payload[3],payload[4],payload[5],payload[6],payload[7],payload[8],payload[9],payload[10],payload[11],payload[12],payload[13],payload[14],payload[15]]
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<logger level="INFO" doc:name="Log Request Data" doc:id="2fcef2f7-7d7d-4f4c-9cd4-beccd838d91e" message="#['[GetTenantLeaseData][Data Requested for :' ++ vars.requestData ++ ']']"/>
+				<db:stored-procedure doc:name="Get Tenant Lease Data " doc:id="42cd1d16-7e8d-4ce0-b216-334feace35ea" config-ref="Oracle_Configuration">
+					<db:sql >call #[data;resultSet;out] := XXATC.ATC_PN_IND_TT_UTILS_PKG.GET_TENANT_LEASE_DATA(#[payload[0]],#[payload[1]],#[payload[2]],#[payload[3]],#[payload[4]],#[payload[5]],#[payload[6]],#[payload[7]],#[payload[8]],#[payload[9]],#[payload[10]],#[payload[11]],#[payload[12]],#[payload[13]],#[payload[14]],#[payload[15]])</db:sql>
+				</db:stored-procedure>
+				<set-variable value="#[sizeOf(payload.data)]" doc:name="Set recordCount" doc:id="b2feaf8a-c0bd-402c-b8b8-adfa2bb251f8" variableName="recordCount"/>
+				<flow-ref doc:name="tenant-lease-data-flow" doc:id="e6775e42-b208-4b94-b6e8-d6c2ca567913" name="tenant-lease-data-flow"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Set SOAP Response" doc:id="75142bd3-d128-4716-a575-e1bb6c61fa67" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="11358396-e865-485f-a27f-a519c630b8d5" variableName="responseTime"/>
+				<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Total Response Time Calculation" doc:id="ac9d175c-dfbd-43b8-a788-e5f544fd4daf" variableName="totalTime"/>
+				<logger level="INFO" doc:name="Log Response Time" doc:id="915a036e-23cb-4631-9ef0-2c87912c2737" message="#['[GetLandLeaseData][TotalTime : ' ++ vars.totalTime  ++ 'ms]']"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="tenant-lease-data-flow" doc:id="0c2dc640-3ff0-44ec-9b46-112ce66614d3" > 
+	<choice doc:name="Data Found?" doc:id="ccdd52ec-6e27-40d0-b8e0-cffb7d618a4f" >
+					<when expression="#[sizeOf(payload.data) &gt; 0]">
+						<set-payload value="#[payload.data]" doc:name="Set Payload" doc:id="1ea3fc0f-a6ef-4186-9b42-d5635cfe4b16" />
+						<foreach doc:name="For Each" doc:id="e9fa7a87-bc80-42f9-845f-93e2a2705f22" >
+							<ee:transform doc:name="Transform Message" doc:id="b94173e5-8790-498b-a0e4-e289373fb85e" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+customerName : payload.CUSTOMER_NAME,
+golbalSiteId : payload.GLOBAL_SITE_ID,
+ipFeeAmount : payload.IP_FEE_AMOUNT,
+srrAmount : payload.SRR_AMOUNT
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</foreach>
+						<logger level="INFO" doc:name="Log Data found" doc:id="1882c3e3-40a5-49fe-946c-f6bb8bfe0813" message="#['[GetTenantLeaseData][Data successfully extracted for :' ++ write(vars.requestData,'application/java') ++ ' - Count : ' ++ sizeOf(payload) ++ ']']"/>
+						<ee:transform doc:name="Set SOAP Response With Data" doc:id="9f1861d2-6518-46e6-a28f-d5003bf77db7">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[now().milliseconds]" doc:name="Set Response Time" doc:id="1bd84332-de91-473e-9508-e7475b3e9c84" variableName="responseTime"/>
+						<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Set totalTime" doc:id="bcc6866b-4ad8-49a0-a0f0-64bb7eff5367" variableName="totalTime"/>
+						<logger level="INFO" doc:name="Log Total Time" doc:id="2612aed7-ba73-455b-9721-2e9c0224c6fa" message="#['[Get Tenant Lease Data][TotalTime :' ++ vars.totalTime ++ ']']"/>
+						<ee:transform doc:name="Audit Payload" doc:id="0f38158a-5af8-421d-89fb-adb589b00327" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Tenant Lease Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " :" ++ vars.requestData ++ ",
+	  "Total Time" : " ++ vars.totalTime ++'ms'",
+	  "Record Count " :" ++ vars.recordCount",
+	  "Status " : "Success"
+     }
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<flow-ref doc:name="call-audit-serviceFlow" doc:id="13c2558e-92d5-48dd-a4f8-aa70c72d625c" name="call-audit-serviceFlow"/>
+					
+</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="3b3735ff-c81e-49be-90da-ca490b31666b" message="#['[GetTenantLeaseData][No data extracted for :' ++ vars.requestData ++ ' - Count : 0]']"/>
+						<ee:transform doc:name="Set SOAP Reponse" doc:id="5f5e6059-c979-4dc8-b5dd-bd64a18bd6d8" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="562b915b-b942-4b3b-83e3-d746596297c8" variableName="responseTime"/>
+						<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Set totalTime" doc:id="f647ef69-eb7f-48b1-820b-8a1b32a9b9bb" variableName="totalTime"/>
+						<logger level="INFO" doc:name="Log Total Time" doc:id="02e85a5d-566c-4eed-b20f-b5a42a9aaa74" message="#['[GetTenantLeaseData][TotalTime :'  ++ vars.totalTime ++ 'ms]']"/>
+						<ee:transform doc:name="Audit Payload" doc:id="c29b1b03-71c1-4aaa-8ee7-749a801365da" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Tenant Lease Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " :" ++ vars.requestData ++ ",
+	  "Total Time" : " ++ vars.totalTime ++'ms'",
+	  "Record Count " :" ++ vars.recordCount",
+	  "Status " : "SUCCESS_NO_DATA_FOUND"
+     }
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<flow-ref doc:name="call-audit-serviceFlow" doc:id="777a5e4c-4d09-4d99-acd8-12ecb9108927" name="call-audit-serviceFlow"/>
+					</otherwise>
+				</choice>
+	
+	
+	</flow>
+	
+	
+	
+	
+</mule>

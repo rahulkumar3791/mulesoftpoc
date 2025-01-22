@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f96c827e-fc48-44d3-8b25-57883e54d995" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="0bef7d26-7cc9-4ab4-a60a-56502554b61c" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="rahuldb" />
+	</db:config>
+	<db:config name="Oracle_Database_Config" doc:name="Database Config" doc:id="4c236a31-077c-448d-b940-8d5ecc7b8985" >
+		<db:oracle-connection host="localhost" user="admin" password="admin" serviceName="rahuldb" />
+	</db:config>
+	<flow name="database-templateFlow" doc:id="4d450956-01c7-43f3-81f8-554b402ad7a4" >
+		<http:listener doc:name="Listener" doc:id="9ffb0be1-a18b-4503-b72b-0cee69a4be91" config-ref="HTTP_Listener_config" path="/db"/>
+		<flow-ref doc:name="database-oracle-flow" doc:id="12621480-268d-436b-b437-bf0c2121d792" name="database-mysql-flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="8111d908-30c9-4d4f-9f4c-135bc5453d51" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="2ea43dde-6d7f-42ef-ae52-177127848d04" collection="#[payload]">
+			<logger level="INFO" doc:name="Logger" doc:id="9ed7f079-d0ff-4a9d-ab0f-09c16a85535d" message="#[payload]" />
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="5e58f8b7-766c-4783-b83e-dcd0114bcdd1" message="============flow completed========"/>
+	</flow>
+	<flow name="database-oracle-flow" doc:id="53122a95-a368-402e-8210-99bba317922f" >
+		<db:select doc:name="Select" doc:id="5fa8ea89-116b-4492-920a-66e9f6367861" config-ref="Oracle_Database_Config">
+			<db:sql><![CDATA[select * from dual]]></db:sql>
+		</db:select>
+
+	</flow>
+	<flow name="database-mysql-flow" doc:id="9f3ec4f3-b9ab-4698-a9f0-c2f9ab68103b" >
+		<db:select doc:name="Select Data" doc:id="59f7230a-e25b-464a-99a7-7a3d6bb997ba" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from persons]]></db:sql>
+		</db:select>
+	</flow>
+</mule>

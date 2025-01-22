@@ -1,0 +1,9 @@
+{
+"customer": "ramtest1",
+"action": "checkout",
+"data": {
+"transaction_id": "testorder1",
+"total":"75",
+"items": [ {"product_id":"P1","product_name":"Frame","product_url":"https://zennioptical.com/image/image.jpeg","quantity":"1","subtotal":"100"}]
+}
+}

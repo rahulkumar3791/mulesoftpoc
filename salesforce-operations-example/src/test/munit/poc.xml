@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="087e0b01-7339-4a1f-bff1-1ea4a8564f8c" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="f98985fd-fdd7-4e57-9c3e-e0462584f974" >
+		<http:request-connection protocol="HTTPS" host="gorest.co.in" />
+	</http:request-config>
+	<flow name="pocFlow" doc:id="459dfcce-6acb-496a-ad4d-663edc2a1c49" >
+		<http:listener doc:name="Listener" doc:id="ba40edd1-021f-41c0-8ccc-7e7065bb1e6a" config-ref="HTTP_Listener_config" path="/api/rest/test">
+			<http:error-response >
+				<http:body ><![CDATA[#[output application/json --- payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<http:request method="POST" doc:name="Request" doc:id="fa60536b-5324-43d1-ab6e-6cb04a82daab" url="https://gorest.co.in/public/v2/users" config-ref="HTTP_Request_configuration" />
+		<ee:transform doc:name="Transform Message" doc:id="e565337f-f58e-4bcc-bf08-c036cce940f8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4a507175-3db9-4124-b28f-0e897a214fb1" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="91a7f9e8-1fd0-47d5-88de-1b18277e1d3d" >
+				<ee:transform doc:name="Transform Message" doc:id="507edeb3-3074-462e-b202-ce0aed38bab5" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"errorDesc" : error.detailedDescription,
+	"errorCode" : error.muleMessage.attributes.StatusCode
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="a60eba54-2e56-4c08-bcfc-c6c67c4f9d7a" message="#[output application/json --- payload]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="pocFlow1" doc:id="38d5f116-18cc-4f88-b7c4-b1372f9b6b45" >
+		<logger level="INFO" doc:name="Logger" doc:id="a652d0d7-88f3-48df-a6f6-86d09927f9f4" />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7ddca594-a05b-4223-b5a4-f5623bb0a3f9" >
+				<ee:transform doc:name="Transform Message" doc:id="5937bbd9-bd25-40ab-b492-cab35c634ee0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorInfo" : error.detailedDescription
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="17936e74-331d-43bf-aadc-05e39f54df62" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTPS_Listener_config" doc:name="HTTP Listener config" doc:id="c7d6e9a7-2143-4403-8165-241e174abc3c" >
+		<http:listener-connection host="0.0.0.0" port="8082" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="server-keystore.jks" keyPassword="mulesoft" password="mulesoft" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="08876035-44d6-4a02-9cc2-74aa206410ca" >
+		<http:request-connection protocol="HTTPS" host="localhost" port="8082" >
+			<tls:context >
+				<tls:trust-store path="client-truststore.jks" password="mulesoft" type="jks" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f8ece5bd-06a2-45ed-8ff1-a7c0df603e88" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="server-app-flow" doc:id="3c126e10-c5e0-4cc6-b546-3a6742b7bba8" >
+		<http:listener doc:name="Listener" doc:id="1a9a30ce-8166-4cfd-a7aa-6ffe02da05d8" config-ref="HTTPS_Listener_config" path="/test"/>
+		<set-payload value='#["Tested successfully"]' doc:name="Set Payload" doc:id="f0b598d8-e7e6-4f55-a9b3-77b948f20e60" />
+	</flow>
+	<flow name="client-app-flow" doc:id="4d63cf01-1829-41f1-810a-f2790468488c" >
+		<http:listener doc:name="Listener" doc:id="04491144-78d3-4bb3-8b66-f07cae6e0a08" config-ref="HTTP_Listener_config" path="/client"/>
+		<http:request method="GET" doc:name="Request" doc:id="3a38b653-2841-431c-8034-dc7d64b8744d" config-ref="HTTP_Request_configuration" path="/test"/>
+	</flow>
+</mule>

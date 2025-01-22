@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="68213c13-39bc-4f84-af75-14432e925a43" >
+		<http:listener-connection host="${https.host}" port="${https.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store path="keystore" keyPassword="${tls.store.password}" password="${tls.key.password}" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<flow name="feeds-serengeti-invoice-endpoints" doc:id="a6b3c0d1-a5d9-4a12-b738-0ee7b5f2b8be" maxConcurrency="1">
+		<http:listener doc:name="Listener" doc:id="cf9558ba-6106-49b4-8a76-81344716f37d" config-ref="HTTP_Listener_config" path="/api/sftp/invoice"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="bd86c9fd-2ec4-47f4-a8c4-df77a3b54658" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<logger level="INFO" doc:name="Logger" doc:id="3a278770-114d-4b5b-8757-3e1566054145" message="## Serengeti invoice endpoint flow started ###"/>
+		<flow-ref doc:name="serengeti-invoice-flow" doc:id="beabb5b0-f6fe-4d49-9686-352bd025bc32" name="serengeti-invoice-Flow" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="453698e4-3c95-45c3-9180-3ac1a2b9e939" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="bb370e26-cf35-45ff-b76f-fd48b19bd1b1" message="#['error in invoice endpoints flow : ' ++ error.detailedDescription default 'ERROR']"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="feeds-serengeti-payment-endpoints" doc:id="b2b182ad-9921-4a1f-944c-ecd6895bc3ea" maxConcurrency="1" >
+		<http:listener doc:name="Listener" doc:id="40e97b12-830f-426d-89f7-53b5308a4eb9" config-ref="HTTP_Listener_config" path="/api/sftp/payment" />
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="c6106ffb-1bcf-4251-96ed-42ad81129072" realm="mule" >
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<logger level="INFO" doc:name="Logger" doc:id="7269271f-90f9-49f4-a08e-8014350882d0" message="## Serengeti payment endpoint flow started ###" />
+		<flow-ref doc:name="serengeti-payment-flow" doc:id="b7726319-99e4-4503-ac2a-c3f88f5f22a6" name="serengeti-paymentFlow" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="Copy_of_On Error Propagate" doc:id="1ffb774d-9c14-4120-a538-9ca7b0f1bd3c" type="ANY" >
+				<logger level="INFO" doc:name="Logger" doc:id="33ee0680-9c3d-470c-a325-7cb757840bc8" message="#['error in payment endpoints flow : ' ++ error.detailedDescription default 'ERROR']" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	
+	<flow name="feeds-serengeti-payments-scheduler" doc:id="39165b5b-f712-43ec-b332-da8e275e9689" maxConcurrency="1">
+		<scheduler doc:name="Scheduler" doc:id="e7953551-153c-4133-9246-49f47eb342d8" >
+			<scheduling-strategy >
+				<cron expression="${serengeti.payment.cron.expression}" />
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="108b5643-4d2b-489d-b99e-330671e51ff6" message="## Serengeti payment scheduler flow started ###"/>
+		<flow-ref doc:name="serengeti-paymentFlow" doc:id="d0302e74-60af-4a88-909f-cc6410730680" name="serengeti-paymentFlow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="56e398c7-2a5a-4659-8609-cc859d2fe9d5" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="58e82447-3719-415f-b67f-8b2186ef80a7" message="#['error in payment scheduler flow : ' ++ error.detailedDescription default 'ERROR']"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="feeds-serengeti-invoice-scheduler" doc:id="7819be2d-c56b-41f6-baaf-48aaa9997449" maxConcurrency="1">
+		<scheduler doc:name="Scheduler" doc:id="e2d6b030-8a61-4b5e-8f2b-1f62f5c9128e" >
+			<scheduling-strategy >
+				<cron expression="${serengeti.invoice.cron.expression}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="a709524a-503f-4a3f-ade0-8c1d6831a4c2" message="## Serengeti invoice scheduler flow started ###"/>
+		<flow-ref doc:name="serengeti-invoice-flow" doc:id="c7bbba81-edb2-49cf-bcac-bb5c1076ca4e" name="serengeti-invoice-Flow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ec7e55de-43c7-4d0c-a976-88e692cfbae8" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="6fab6fc0-b358-495f-87ae-eafe11068f77" message="#['error in invoice scheduler flow : ' ++ error.detailedDescription default 'ERROR']"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	
+</mule>

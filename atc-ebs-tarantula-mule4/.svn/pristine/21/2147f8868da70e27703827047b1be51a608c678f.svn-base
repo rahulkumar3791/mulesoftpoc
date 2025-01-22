@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="vendor-flow" doc:id="e822bb53-61f3-4086-a7ce-6313d0710168" >
+		<logger level="INFO" doc:name="Log Transaction Start Time" doc:id="b3a4c51d-3632-4a18-8ed2-837aadab20ea" message="#['Get Vendor Data Service Requested at : ' ++ vars.requestTime]"/>
+		<set-variable value="#[{COUNTRY_CODE: payload[0],MAX_RECORD: payload[1] }]" doc:name="Set Request Data" doc:id="1ead7ec5-3644-411f-8c82-e78e78c2de70" variableName="requestData"/>
+		<logger level="INFO" doc:name="Log Request Data" doc:id="2ffe9369-8bbd-4399-a3f2-d8050d2fabcb" message="#['[Get Vendor Data][Data Requested for ' ++ vars.requestData]"/>
+		<choice doc:name="Required Parameters Passed?" doc:id="d1397ed6-e71a-40e1-8ef9-ec1445f1b05d" >
+			<when expression='#[payload[0] != null and payload[0] != "" and payload[1] != null and payload[1] != ""]'>
+				<remove-variable doc:name="Remove value of cxf_operation" doc:id="92f03f5f-9e63-4574-ab24-912753e63906" variableName="cxf_operation"/>
+				<remove-variable doc:name="Remove cxf_service" doc:id="b0266ca4-8f33-4691-92c4-51ff4e694f16" variableName="cxf_service"/>
+				<remove-variable doc:name="Remove method value" doc:id="cbe7544a-6634-4f01-86c1-cb901c9b81f6" variableName="method"/>
+				<ee:transform doc:name="Set maxRecord and countryCode Value" doc:id="45e63925-1ddd-4bbb-9d25-47a36c7eff5e" >
+					<ee:message >
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="maxRecord" ><![CDATA[%dw 2.0
+output application/java
+---
+payload[1]]]></ee:set-variable>
+						<ee:set-variable variableName="countryCode" ><![CDATA[%dw 2.0
+output application/java
+---
+payload[0]]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="vendor-business-flow" doc:id="e6775e42-b208-4b94-b6e8-d6c2ca567913" name="vendor-business-flow"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Set Response Data" doc:id="75142bd3-d128-4716-a575-e1bb6c61fa67" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="11358396-e865-485f-a27f-a519c630b8d5" variableName="responseTime"/>
+				<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Total Response Time Calculation" doc:id="ac9d175c-dfbd-43b8-a788-e5f544fd4daf" variableName="totalTime"/>
+				<logger level="INFO" doc:name="Log Required Parameters Error" doc:id="70d8fa51-cc47-4a18-8fcb-deeceacc8221" message="Either Country Code And/Or Max Record is/are missing."/>
+				<logger level="INFO" doc:name="Log Response Time" doc:id="915a036e-23cb-4631-9ef0-2c87912c2737" message="#['[VendorDataExtract][TotalTime : ' ++ vars.totalTime  ++ 'ms]']"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="vendor-business-flow" doc:id="ffcb3473-28ab-4c98-acbd-0366c2a5184d" >
+		<try doc:name="Try" doc:id="14adb7b8-ab4d-408e-bbc7-335201659cd2">
+					<set-variable value="#[%dw 2.0
+import isNumeric from dw::core::Strings
+output application/java
+---
+isNumeric(vars.maxRecords)]" doc:name="Set flag" doc:id="7b1c0f84-4c6a-4e56-902c-a86650ca2c5e" variableName="flag" />
+				</try>
+		<choice doc:name="RecordCount Type is Integer?" doc:id="ef5d4b07-affa-494c-981b-d5cb633138d7" >
+			<when expression="#[vars.flag == true]">
+				<db:stored-procedure doc:name="Call Database SP for Vendor Details" doc:id="bdba2493-2a82-4c90-b569-797597df5bce" config-ref="Oracle_Configuration">
+					<db:sql >call XXATC.ATC_IND_INV_VENDOR_TT_PKG.VENDOR_CHANGE_AUDIT_INFO(:p_country_code,:p_max_record,:p_vendor_info) </db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	"p_country_code" : vars.countyCode,
+	"p_max_record" : vars.maxRecord,
+	"p_vendor_info" : ""
+	
+	
+}]]]></db:input-parameters>
+				</db:stored-procedure>
+				<set-variable value="#[sizeOf(payload.p_vendor_info)]" doc:name="Set recordCount" doc:id="06599e86-13c5-487e-90ac-f6f4e3b2f4c8" variableName="recordCount"/>
+				<flow-ref doc:name="vendor-data-flow" doc:id="d7a1cfd7-8a70-4a4f-a594-bb615ecc4263" name="vendor-data-flow"/>
+				<flow-ref doc:name="call-email-flow" doc:id="73ad28d4-e6f6-4ddb-a112-c0a99a560a36" name="call-email-flow"/>
+							</when>
+			<otherwise >
+				<ee:transform doc:name="Set Response Data" doc:id="67c27864-82d5-4bcf-a159-f80dbdc08f44" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="8d0e437f-24c0-4a60-8c3f-070ae18fb61c" variableName="responseTime"/>
+				<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Total Response Time Calculation" doc:id="00ba4046-2937-4268-b7b9-ba428a99c638" variableName="totalTime"/>
+				<logger level="INFO" doc:name="Log Required Parameters Error" doc:id="339c21af-ee02-4d06-85cd-17a5abe116ef" message="Either Country Code And/Or Max Record is/are missing."/>
+				<logger level="INFO" doc:name="Log Response Time" doc:id="7e4bfcea-047b-460b-851f-6c3ba727e48a" message="#['[VendorDataExtract][TotalTime :' ++  vars.totalTime ++ 'ms]']"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="de508ea1-a91b-4e61-a338-a775b77891e0" >
+				<set-variable value="#[false]" doc:name="Set flag" doc:id="d2adb6f1-db27-419a-9de4-3220bfb79220" variableName="flag"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="vendor-data-flow" doc:id="0c2dc640-3ff0-44ec-9b46-112ce66614d3" > 
+	<choice doc:name="Vendor Data Found?" doc:id="ccdd52ec-6e27-40d0-b8e0-cffb7d618a4f" >
+					<when expression="#[sizeOf(payload.p_vendor_info) &gt; 0]">
+						<set-payload value="#[payload.p_vendor_info]" doc:name="Set Payload" doc:id="1ea3fc0f-a6ef-4186-9b42-d5635cfe4b16" />
+						<foreach doc:name="For Each" doc:id="e9fa7a87-bc80-42f9-845f-93e2a2705f22" >
+							<ee:transform doc:name="Transform Message" doc:id="b94173e5-8790-498b-a0e4-e289373fb85e" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+circle : payload.CIRCLE,
+city : payload.CITY,
+phone : payload.PHONE,
+prefix : payload.PREFIX,
+state : payload.STATE,
+zip : payload.ZIP,
+addressLine1 : payload.ADDRESS_LINE1,
+addressLine2 : payload.ADDRESS_LINE2,
+addressLine3 : payload.ADDRESS_LINE3,
+emailAddress : payload.EMAIL_ADDRESS,
+endDateActive : payload.END_DATE_ACTIVE,
+firstName : payload.FIRST_NAME,
+lastName : payload.LAST_NAME,
+middleName : payload.MIDDLE_NAME,
+startDateActive : payload.START_DATE_ACTIVE,
+vendorCode : payload.VENDOR_CODE,
+vendorName : payload.VENDOR_NAME,
+vendorSiteCode : payload.VENDOR_SITE_CODE,
+vendorType : payload.VENDOR_TYPE
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</foreach>
+						<logger level="INFO" doc:name="Log Vendor Data Extract" doc:id="1882c3e3-40a5-49fe-946c-f6bb8bfe0813" message="#['[VendorDataExtract][Data successfully extracted for #[requestData] - Count :' ++  sizeOf(payload.vendor) ++ ']']"/>
+						<set-variable value="#[now().milliseconds]" doc:name="Set Response Time" doc:id="1bd84332-de91-473e-9508-e7475b3e9c84" variableName="responseTime"/>
+						<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Set totalTime" doc:id="bcc6866b-4ad8-49a0-a0f0-64bb7eff5367" variableName="totalTime"/>
+						<logger level="INFO" doc:name="Logger" doc:id="2612aed7-ba73-455b-9721-2e9c0224c6fa" message="#['[VendorData][TotalTime :' ++ vars.totalTime ++ ']']"/>
+						<ee:transform doc:name="Audit Payload" doc:id="0f38158a-5af8-421d-89fb-adb589b00327" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Vendor Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " :" ++ vars.requestData ++ ",
+	  "Total Time" : " ++ vars.totalTime ++'ms'",
+	  "Record Count " :" ++ vars.recordCount",
+	  "Status " : "Success"
+     }
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<flow-ref doc:name="call-audit-serviceFlow" doc:id="13c2558e-92d5-48dd-a4f8-aa70c72d625c" name="call-audit-serviceFlow"/>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="3b3735ff-c81e-49be-90da-ca490b31666b" message="#['[VendorDataExtract][No data extracted for' ++ vars.requestData  ++ '  - Count : 0]']"/>
+						<ee:transform doc:name="Set SOAP Reponse" doc:id="5f5e6059-c979-4dc8-b5dd-bd64a18bd6d8" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="562b915b-b942-4b3b-83e3-d746596297c8" variableName="responseTime"/>
+						<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Set totalTime" doc:id="f647ef69-eb7f-48b1-820b-8a1b32a9b9bb" variableName="totalTime"/>
+						<logger level="INFO" doc:name="Log Total Time" doc:id="02e85a5d-566c-4eed-b20f-b5a42a9aaa74" message="#['[GetTenantLeaseData][TotalTime :'  ++ vars.totalTime ++ 'ms]']"/>
+						<ee:transform doc:name="Audit Payload" doc:id="c29b1b03-71c1-4aaa-8ee7-749a801365da" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": 'Get Vendor Data',
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " :" ++ vars.requestData ++ ",
+	  "Total Time" : " ++ vars.totalTime ++'ms'",
+	  "Record Count " :" ++ vars.recordCount",
+	  "Status " : "SUCCESS_NO_DATA_FOUND"
+     }
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<flow-ref doc:name="call-audit-serviceFlow" doc:id="777a5e4c-4d09-4d99-acd8-12ecb9108927" name="call-audit-serviceFlow"/>
+					</otherwise>
+				</choice>
+	
+	
+	</flow>
+	<flow name="call-email-flow" doc:id="ce7e8b5c-489a-4e6c-8787-d0f8bde37083" >
+		<choice doc:name="Choice" doc:id="7b91f99d-497a-428f-81c9-fec80bb1db03" >
+			<when expression="#[p('vendor.mail.enable')]">
+				<ee:transform doc:name="Email Payload" doc:id="5d05c483-6ad9-4451-a95a-b85376acd4bf" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	  "Request Data " : vars.requestData,
+	  "Record Count " : vars.recordCount ,
+     }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="email-Flow" doc:id="0f9c3b32-ad78-4731-87d0-76361522ce8e" name="email-Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="bb6ad6dc-dd67-4e9e-825d-f7f76534586d" message="##### No email notification required."/>
+			</otherwise>
+		</choice>
+	</flow>
+	
+	
+	
+	
+</mule>

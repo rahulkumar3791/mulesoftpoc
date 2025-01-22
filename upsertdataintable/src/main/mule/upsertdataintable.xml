@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="dd764443-94f1-44cd-b10f-7c9dcef84cfa" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="87abb249-00d5-45ba-88e8-0273eea8d7ec" >
+		<db:oracle-connection host="localhost" user="sys as sysdba" password="Oracle123" instance="orcl" />
+	</db:config>
+	<flow name="upsert-data-in-tableFlow" doc:id="60354c25-d845-42ce-b21e-26ad1ce48ec2" >
+		<http:listener doc:name="Listener" doc:id="386bf4f3-8770-4e4f-bbee-3f85ed1eb871" config-ref="HTTP_Listener_config" path="/upsert" />
+		<ee:transform doc:name="Transform Message" doc:id="e78be96b-cedc-4521-896f-01ea579ece5b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	"CUSTOMER_ID":1,
+	"CUSTOMER_NAME":"TEST1",
+	"ADDRESS1":"Flat 101",
+	"ADDRESS2":"Viman Nagar",
+	"POSTALCODE":"201018",
+	"CITY":"PUNE"
+	
+},{
+	"CUSTOMER_ID":2,
+	"CUSTOMER_NAME":"TEST2",
+	"ADDRESS1":"Flat 102",
+	"ADDRESS2":"Viman Nagar 1",
+	"POSTALCODE":"201019",
+	"CITY":"PUNE"
+	
+},{
+	"CUSTOMER_ID":3,
+	"CUSTOMER_NAME":"TEST3",
+	"ADDRESS1":"Flat 103",
+	"ADDRESS2":"Viman Nagar",
+	"POSTALCODE":"201018",
+	"CITY":"PUNE"
+	
+},{
+	"CUSTOMER_ID":4,
+	"CUSTOMER_NAME":"TEST4",
+	"ADDRESS1":"Flat 104",
+	"ADDRESS2":"Viman Nagar 4",
+	"POSTALCODE":"201019",
+	"CITY":"PUNE"
+	
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="089d1a5a-d389-4f13-8266-fde7619ca7b7" collection="payload" >
+			<db:select doc:id="401ac16a-4e06-43b7-a185-876547d67593" config-ref="Database_Config" doc:name="Select" target="recordcount">
+				<db:sql >select count(1) as recordcount from customers where customer_id=:cust_id</db:sql>
+				<db:input-parameters ><![CDATA[#[{cust_id:payload.CUSTOMER_ID}]]]></db:input-parameters>
+			</db:select>
+			<choice doc:name="Choice" doc:id="1f67be9a-f467-429c-986e-bb4ff250ef0f" >
+				<when expression="#[vars.recordcount.RECORDCOUNT[0]==1]">
+					<db:update doc:id="7f7ffd67-624c-4463-af8a-c3954de1fe5a" doc:name="Update" config-ref="Database_Config">
+						<db:sql>update customers set 
+CUSTOMER_NAME=:CUSTOMER_NAME,ADDRESS1=:ADDRESS1,ADDRESS2=:ADDRESS2,POSTALCODE=:POSTALCODE,CITY=:CITY
+where CUSTOMER_ID=:CUSTOMER_ID</db:sql>
+						<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+					</db:update>
+				</when>
+				<otherwise>
+					<db:insert doc:name="Insert" doc:id="a4995930-c940-4216-83ad-68b7ebb3ec0a" config-ref="Database_Config">
+						<db:sql>insert into customers (CUSTOMER_ID,CUSTOMER_NAME,ADDRESS1,ADDRESS2,POSTALCODE,CITY) 
+values(:CUSTOMER_ID,:CUSTOMER_NAME,:ADDRESS1,:ADDRESS2,:POSTALCODE,:CITY)</db:sql>
+						<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+					</db:insert>
+				</otherwise>
+			</choice>
+		</foreach>
+	</flow>
+</mule>

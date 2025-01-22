@@ -1,0 +1,14 @@
+package com.atc.esb.tarantula;
+
+import java.util.List;
+
+import javax.jws.WebResult;
+import javax.jws.WebService;
+
+import com.atc.model.tarantula.RequisitionAndMoveOrder;
+
+@WebService
+public interface GetRequisitionAndMoveOrderStatus {
+
+	public @WebResult(name="RequisitionAndMoveOrder")List<RequisitionAndMoveOrder> getRequisitionAndMoveOrder() throws Exception;
+}

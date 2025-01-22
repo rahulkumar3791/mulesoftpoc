@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <flow doc:id="140b7064-74a1-416e-bc9c-2a32e6620c7b" name="project-site-creation-tarantula-to-oracle-scheduler">
+        <scheduler disallowConcurrentExecution="true" doc:id="7488552d-4541-4d49-9306-6b9cffcdc159" doc:name="Scheduler">
+            <scheduling-strategy>
+                <cron expression="${project.site.creation.tt.to.oracle.corn.expression}" timeZone="${project.site.creation.tt.to.oracle.timezone}"/>
+            </scheduling-strategy>
+        </scheduler>
+        <choice doc:id="2ca2bd73-70bb-4ab8-bf3f-be1ec8dd249c" doc:name="Choice">
+            <when expression="#[p('project.site.creation.tt.to.oracle.corn')]">
+                <flow-ref doc:id="510eb5c4-2d49-4f87-bc2f-ca9a9e27078b" doc:name="project-site-creation-tarantula-to-oracle_mailFlow" name="project-site-creation-tarantula-to-oracle_mailFlow"/>
+            </when>
+            <otherwise>
+                <logger doc:id="1c56be28-3423-42df-92f3-12ee13ecc6ec" doc:name="Logger" level="INFO" message="#[&quot;### Project-site-creation TT to Oracle flow Disabled via Trigger ###&quot;]"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow doc:id="47ff7e0e-b02b-4dde-b024-687438dd8c66" name="project-status-tt-to-oracle-scheduler">
+        <scheduler disallowConcurrentExecution="true" doc:id="49df586f-1be7-4e31-a2f0-84add3789834" doc:name="Scheduler">
+            <scheduling-strategy>
+                <cron expression="${project.status.tt.to.oracle.corn.expression}" timeZone="${project.status.tt.to.oracle.timezone}"/>
+            </scheduling-strategy>
+        </scheduler>
+        <choice doc:id="476bdcaa-8345-492b-bf6a-9ea56f4c45f3" doc:name="Choice">
+            <when expression="#[p('project.status.tt.to.oracle.corn')]">
+                <flow-ref doc:id="f3bde781-bb0a-403f-8b60-4289d4515a97" doc:name="project-status-tt-to-oracle-mailFlow" name="project-status-tt-to-oracle-mailFlow"/>
+            </when>
+            <otherwise>
+                <logger doc:id="5cd765eb-fee5-4fd0-8cb7-d12eac47d6cb" doc:name="Logger" level="INFO" message="#[&quot;### Project-status TT to Oracle flow Disabled via Trigger ###&quot;]"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow doc:id="80412445-7eaa-4394-9c89-a774bfd98f9b" name="purchase-requistion-scheduler">
+        <scheduler disallowConcurrentExecution="true" doc:id="ae138ea4-7837-4974-af66-b6dc0d1f7ef6" doc:name="Scheduler">
+            <scheduling-strategy>
+                <cron expression="${purchase.requisition.cron.expression}" timeZone="${purchase.requisition.timezone}"/>
+            </scheduling-strategy>
+        </scheduler>
+        <choice doc:id="fa9b2790-e7bd-4ae8-bce1-d66eac4a25a8" doc:name="Choice">
+            <when expression="#[p('purchase.requisition.cron')]">
+                <flow-ref doc:id="538eafb8-d97b-41a4-87e8-35869b5cfda0" doc:name="purchase-requisition-mailFlow" name="purchase-requisition-mainFlow"/>
+            </when>
+            <otherwise>
+                <logger doc:id="96672d8a-f5dd-476b-a801-59c9c827561e" doc:name="Logger" level="INFO" message="#[&quot;### Purchase Requisition flow Disabled via Trigger ###&quot;]"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow doc:id="dceb0a97-992a-43d7-9df2-6a133c2356fd" name="project-site-creation-tarantula-to-oracle-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="19a4c069-7d0e-4b7f-9367-e72efb01c1f0" doc:name="Listener" path="${project.site.creation.tt.to.oracle.projectsite.url}"/>
+        <http:basic-security-filter doc:id="01a05690-5b1c-4fae-970b-8172eeab984b" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="a0bf9d8d-b5c7-488c-978a-f0ab678265ac" doc:name="project-site-creation-tarantula-to-oracle-mainFlow" name="project-site-creation-tarantula-to-oracle_mailFlow"/>
+        <set-payload doc:id="695233a8-0f6d-498e-a0fd-d3448d7c2cf8" doc:name="Response" value="#[output application/json --- {  message   : &quot;Flow has been successfully completed&quot;,  Interface  : &quot;Project Site creation from  TARANTULA to Oracle&quot;,  recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',  currentLastRun  : if(vars.lastUpdateDate != null) vars.lastUpdateDate  else vars.lastRunDate,  batchNumber:  if(vars.totalRecords != null) vars.batchDetails.batchNumber[0] else 'Null' }]"/>
+        <logger doc:id="92dc96c4-7fd2-4094-b04a-ce65ce4c23e5" doc:name="Logger" level="INFO" message="#[payload]"/>
+        <error-handler>
+            <on-error-propagate doc:id="2e558653-41c8-4628-a127-22b2a8515c77" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="ea5d46ef-1746-4d55-aca8-928882367068" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="a98bc60b-c0cd-4183-af26-f7f0e66bd6b9" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="fcd1a7a2-d610-4ecc-b3ac-a8ec4d9ea08e" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.site') default "I-0355",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="5104aeb0-017b-4b2b-850a-6f22f917a88d" name="project-site-creation-tarantula-to-oracle-siteid-http-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="a7432c48-1764-463f-b2c2-d47a4ef77c1f" doc:name="Listener" path="${project.site.creation.tt.to.oracle.projectsite.siteid.url}"/>
+        <http:basic-security-filter doc:id="a0eb4e01-1eef-4ed8-873f-db4ba206e0b6" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="2d61e6e6-2473-4f02-9fa9-5854ae4f08e6" doc:name="project-site-creation-tarantula-to-oracle-siteid_mailFlow" name="project-site-creation-tarantula-to-oracle-siteid_mailFlow"/>
+        <logger doc:id="c66ea1cb-25ef-4893-866b-cb1bb418717e" doc:name="Logger" level="INFO" message="#[payload]"/>
+        <error-handler>
+            <on-error-propagate doc:id="92d69d70-9394-4e2b-b813-85d99d1b52be" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="c979a07d-a8a8-4e05-b115-80c8620d7e25" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="7b105da9-5529-4883-8a57-86b9ffd0d7e1" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="1914b42f-e819-422b-9680-b9bcb682d9e0" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "HTTP",
+	interface_id: p('interface.id.project.site.ttid') default "I-0359",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="8a2b550b-381e-4dfe-9508-20cd81afc1bd" name="project-status-tarantula-to-oracle-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="22c55248-348f-4a48-b209-a3de602e49eb" doc:name="Listener" path="${project.status.tt.to.oracle.projectstatus.url}"/>
+        <http:basic-security-filter doc:id="4d8a3a81-f0fe-4a7b-8841-816946bdedf2" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="658d2e0f-5dd1-431a-bbc1-1d83ef3779ca" doc:name="project-status-tt-to-oracle-mailFlow" name="project-status-tt-to-oracle-mailFlow"/>
+        <set-payload doc:id="07798454-75af-46c4-ad7a-7886725a841d" doc:name="Response" value="#[output application/json --- {  message   : &quot;Flow has been successfully completed&quot;,  Interface  : &quot;Project Status TARANTULA to Oracle&quot;,  recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',  currentLastRun  : if(vars.lastUpdateDate != null) vars.lastUpdateDate  else vars.lastRunDate,  batchNumber:  if(vars.totalRecords != null) vars.batchDetails.batchNumber[0] else 'Null' }]"/>
+        <logger doc:id="ac4b00f7-b70b-4914-9fd7-d36d78a24062" doc:name="Logger" level="INFO" message="#[payload]"/>
+        <error-handler>
+            <on-error-propagate doc:id="7894428b-6795-47ce-825e-08d64dbf2720" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="20ba5ae2-14d5-4fce-ac64-8ba226a7cede" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="57cb1ffa-5ef5-4be1-ab2e-c1bbefb0664c" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="b196b801-0a42-424f-8ac1-53e1a644cad6" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.status') default "I-0356",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="20e71b71-aecd-4618-a2a2-0bbdaadb3592" name="project-status-tarantula-to-oracle-ttid-http-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="5b1559ef-d9fa-4e61-8415-ccca5f2cf33f" doc:name="Listener" path="${project.status.tt.to.oracle.projectstatus.siteid.url}"/>
+        <http:basic-security-filter doc:id="3a3e6966-7c2d-4cf2-bad5-e7c01a538c5b" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="e1309e3e-68ab-4b2e-b724-e25b93fea168" doc:name="project-status-tt-to-oracle-ttid-mailFlow" name="project-status-tt-to-oracle-ttid-mailFlow"/>
+        <error-handler>
+            <on-error-propagate doc:id="924d4689-d797-4ab1-93cf-b7babc0cb6f8" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="6e611707-0f4b-4408-a8e8-a939069d326f" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="cd12722a-a32b-4fa6-8942-4607c29da9a9" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="5aecfc9f-1cd4-46f6-adf0-fa734c454076" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.status.ttid') default "I-0360",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="b4b8d3b4-3496-488d-9d56-294ff1b9a7ff" name="purchase-requisition-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="da36a0f4-a6e5-4f73-b019-d0b8fd3262eb" doc:name="Listener" path="${purchase.requisition.url}"/>
+        <http:basic-security-filter doc:id="9f48116c-ff1d-4f50-b8d0-1280729a7a06" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="6a4d828e-715e-458f-9d27-43871c7fbcf0" doc:name="purchase-requisition-mainFlow" name="purchase-requisition-mainFlow"/>
+        <set-payload doc:id="2794d52a-a892-481c-ac1f-442d7f763f89" doc:name="Response" value="#[output application/json --- {  message   : &quot;Flow has been successfully completed&quot;,  InterfaceName   :  vars.flowName,  flow    : &quot;Purchase Requisition : Oracle to Tarantula&quot;,  recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',  currentLastRun  : if(vars.lastUpdateDate != null) vars.lastUpdateDate  else vars.lastRunDate }]"/>
+        <error-handler>
+            <on-error-propagate doc:id="1b31bbb7-22f4-4097-bb67-a58af1823db0" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="edd61a1d-d89c-423e-9f2c-32ff77dd6667" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="af286c22-9b19-4504-8ade-c89701bc3db8" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="b9bdf831-65fa-4a72-90a0-6a0ea5524504" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.purchase.requisition') default "I-0357",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="ffc82423-4882-4ae6-9356-733d24979005" name="purchase-requisition-ttid-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="2cf2d1bf-65e6-4064-8a5b-6c9a40fda17d" doc:name="Listener" path="${purchase.requisition.siteid.url}"/>
+        <http:basic-security-filter doc:id="9b506b0d-6f25-4d52-a8d4-8db121f95542" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="2cf8d08e-46dc-414f-a244-f7c3990943bb" doc:name="purchase-requisition-ttid-mainFlow" name="purchase-requisition-ttid-mainFlow"/>
+        <set-payload doc:id="65e640d8-184e-4d4c-b701-56edd5359a00" doc:name="Set Payload" value="#[output application/json --- {  message   : &quot;Flow has been successfully completed&quot;,  Interface  : &quot;Purchase requisition LineId : Oracle to TARANTULA&quot;,  recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',  currentLastRun  : if(vars.lastUpdateDate != null) vars.lastUpdateDate  else vars.lastRunDate }]"/>
+        <error-handler>
+            <on-error-propagate doc:id="eeec3070-6798-40b3-9173-6198f2f0a4ca" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="ee695397-0067-498e-8ecb-322fadc66af6" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="3abd9d56-1e90-4ae4-9a1b-acadd4b6e273" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="ca1df835-f52d-4a0d-bf71-d102a2ec3651" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.purchase.requisition.ttid') default "I-0358",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <error-handler doc:id="2278417e-6911-4024-be33-288b0ed14620" name="default-error-handler">
+        <on-error-propagate doc:id="328cd73f-bad5-43b9-96e2-48d6ac6c8798" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+            <ee:transform doc:id="55636ce3-731c-4d90-a309-47641b325fef" doc:name="Transform Message">
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('current.project.id'),
+	service: p('current.project.name') default "atc-mexico-fiber",
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+        </on-error-propagate>
+    </error-handler>
+    <flow name="get:\rest\health:endpoints-config">
+        <http:listener config-ref="HTTP_Listener" doc:id="bef451a7-5424-44bc-89f3-c440a345424b" doc:name="Listener" path="/api/rest/health"/>
+        <http:basic-security-filter doc:id="358d4319-5f80-40cc-a289-1886af6f9f55" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <flow-ref doc:id="c862ef88-4794-42af-ae49-51b4261599d9" doc:name="health:\\health-main" name="health:\\health-main"/>
+        <set-payload doc:id="c90055bd-7d99-4310-b528-6bc87da77283" doc:name="Set Payload" value="#[payload]"/>
+        <error-handler>
+            <on-error-propagate doc:id="7f558ae5-bd59-46b1-8ede-40db1b812eaf" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="HTTP:BASIC_AUTHENTICATION">
+                <ee:transform doc:id="7c3f8048-7458-4b25-95eb-5de47a226a4c" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate doc:id="c3be2c03-50f8-48e1-921e-f0fcab8ea1cb" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <ee:transform doc:id="7a34eb57-c3d9-4480-b43d-f4969277a13b" doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="759d1b02-75d1-40bc-813d-8b7fbe72c3d9" name="tarantula-getUpdateStatusRequisitionAndMoveOrderService">
+        <http:listener config-ref="HTTP_Listener" doc:id="76eaf21e-d3b9-4f12-9b3d-42ff51dd20c6" doc:name="Get Requisition And Move Order Request" path="${get.requisition.and.move.order}"/>
+        <http:basic-security-filter doc:id="55ac23ef-52e5-4d4d-a527-3582be059c97" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="0ef27e96-61a1-47fb-95b2-d2a3f2a1d6d2" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="eee00eef-eb2f-4f5d-be69-54e8b563302a" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <logger doc:id="7bbeaa4f-f7d6-4c0a-80a2-4ece1d2f426c" doc:name="Log IP And Request Time" level="INFO" message="#[&quot;RequestTime &quot; ++ vars.requestTime ++ &quot;IP address :&quot;++ vars.ip]"/>
+        <flow-ref doc:id="34b53b88-b833-400b-af1e-00ce5e133e0c" doc:name="tarantula-getRequisitionAndMoveOrderFlow" name="tarantula-getRequisitionAndMoveOrderFlow"/>
+        <logger doc:id="51a6ebe0-18c7-4ba2-aaaa-21ac7d940d83" doc:name="Logger" level="INFO" message="#['[GetRequisitionAndMoveOrderData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+    </flow>
+    <flow doc:id="c0906a94-9679-41e1-93af-e294f1cc23d6" name="tarantula-inboundService-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="c6a19403-7bb5-411c-80a8-577a46195fd8" doc:name="Insert Order Request" path="${api.soap.set.order}"/>
+        <http:basic-security-filter doc:id="8693c7f9-96aa-4414-a62d-065e0d8888e5" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="b5abc540-c2d9-496d-bb6c-8df0cb1e4071" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="e388e674-6d40-472b-b310-26c799151fbc" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <logger doc:id="9f140aed-17fa-4763-a3e8-3fcb9386d2e6" doc:name="Log IP And Request Time" level="INFO" message="#[&quot;RequestTime &quot; ++ vars.requestTime ++ &quot;IP address :&quot;++ vars.ip]"/>
+        <flow-ref doc:id="1639b128-56ba-47b9-ab14-62512a75fc8d" doc:name="tarantula-InsertOrdersFlow" name="tarantula-InsertOrdersFlow"/>
+        <logger doc:id="0234a056-e773-4d6c-827f-de2ebf2c3d77" doc:name="Response Time" level="INFO" message="#['[SetOrder][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+    </flow>
+    <flow doc:id="45f707bd-dacd-4331-b288-b51139647a3b" name="ebs-getLandLeaseData-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="38b7d3ff-9224-4d1c-9428-92cde14b7825" doc:name="Get Land Lease Data" path="${api.soap.get.land.lease.data}"/>
+        <http:basic-security-filter doc:id="41c3899e-d006-41a9-a04c-3f929ad651b8" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="c9134b73-3d9f-4126-8e7f-c6408a4a8091" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="f7e7e67a-7af1-494e-adb3-ffb1a36def81" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <apikit-soap:router config-ref="soapkit-config" doc:id="52b72ac6-3daf-479b-a342-0dafe87bbc5b" doc:name="Get Land Lease Data">
+            <apikit-soap:attributes><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+        </apikit-soap:router>
+        <flow-ref doc:id="9832817c-17e9-43b5-a9fb-3803057be55b" doc:name="ebs-getLandLeaseData-flow" name="ebs-getLandLeaseData-flow"/>
+        <logger doc:id="12b93ef4-557e-49e6-8130-67e71b9175f1" doc:name="Log IP And Request Time" level="INFO" message='#["RequestTime : " ++ vars.requestTime ++ " ms , IP address :"++ vars.ip]'/>
+        <set-payload doc:id="6ed790d1-1a04-424f-97ed-eb94cbcd6c28" doc:name="Set response" value="#[vars.response]"/>
+        <logger doc:id="9c4252fa-a4d0-4860-85ff-d7ab6a3744d1" doc:name="Logger" level="INFO" message="#['[GetLandLeaseData][ResponseTime : ' ++ vars.responseTime ++ ' ms]']"/>
+        <error-handler>
+            <on-error-propagate doc:id="65c459cc-6e66-4789-9b71-2ab163e4e586" doc:name="On Error Propagate" enableNotifications="true" logException="true">
+                <logger doc:id="9e62be11-a106-4e28-8d11-af59cf6d81c1" doc:name="Logger" level="INFO" message="#[error.detailedDescription]"/>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="985b658a-9253-4c55-ae28-67b5f0ee0811" name="ebs-getTenantLeaseData-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="2c4d6b9b-b8d9-49c8-bd1c-1907a73b780e" doc:name="Get Tenant Lease Data" path="${api.soap.get.tenant.lease.data}"/>
+        <http:basic-security-filter doc:id="bc0d0596-f5e6-4721-aa8b-d019c3d236b0" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="613e6de4-a0a4-4d20-9421-d6e234d5f162" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="c71eddad-4117-46c4-aae9-b6478aa47e33" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <logger doc:id="07fac40f-7d76-43e0-8252-814f768eb11b" doc:name="Log IP And Request Time" level="INFO" message="#[&quot;[GetTenantLeaseData]RequestTime &quot; ++ vars.requestTime ++ &quot;IP address :&quot;++ vars.ip]"/>
+        <apikit-soap:router doc:name="SOAP Router GET Tenant Lease Data" doc:id="0d0530cd-90b6-4f24-b8a1-20104212eb57" config-ref="soapkit-config-GetTenantLeaseData">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:id="effe639d-7688-48a6-b1c3-ef6b30f61829" doc:name="ebs-getTenantLeaseData-flow" name="ebs-getTenantLeaseData-flow"/>
+        <set-payload value="#[vars.response]" doc:name="Set response" doc:id="036d5e12-dcc0-4b95-a023-2de5c534b716" />
+		<logger doc:id="9017b7e1-56ff-4dbe-a8d7-7035ced43c18" doc:name="Logger" level="INFO" message="#['[GetTenantLeaseData][ResponseTime : ' ++ vars.responseTime ++ ' ms]']"/>
+    </flow>
+    <flow doc:id="f63d0e0b-b3a8-4206-bbd8-c6932f96f3e4" name="ebs-getLandLeaseRentData-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="1b9be8d0-4f25-424d-b1c6-27ef7dc826d5" doc:name="Get Land Lease Rent Data" path="${api.soap.get.land.lease.rent.data}"/>
+        <http:basic-security-filter doc:id="12e495f2-ce63-4677-856c-cfdba96c247a" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="bd29a5b8-c189-4179-9c9a-c56bc4183dfb" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="1701be27-f93f-4ac0-9b52-49eaa8313591" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <apikit-soap:router config-ref="soapkit-config-landleaseRent" doc:id="676a8ffb-e18d-4bde-ae47-92906ac2aeb0" doc:name="SOAP Router Land Lease Rent Data">
+            <apikit-soap:attributes><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+        </apikit-soap:router>
+        <flow-ref doc:id="d8e971a6-87fd-4453-a07c-6e548fe82bea" doc:name="ebs-getLandLeaseRentData-flow" name="ebs-getLandLeaseRentData-flow"/>
+        <set-payload doc:id="cb82ad4b-0c86-4b32-b8f6-4ba9e1f83fdb" doc:name="Set response" value="#[vars.response]"/>
+        <logger doc:id="32e7f60f-4602-42dd-a5d7-ab08f08dbd1d" doc:name="Logger" level="INFO" message="#['[GetLandLeaseRentData][ResponseTime : ' ++ vars.responseTime ++ ' ms]']"/>
+    </flow>
+    <flow doc:id="5ace5fdb-7851-4c7a-a808-6965f298c6d1" name="vendor-flow-endpoint">
+        <http:listener config-ref="HTTP_Listener" doc:id="8758b6bb-c399-4ff8-beb6-11d4638829f0" doc:name="Get Vendor Data" path="${api.soap.tarantula.service}"/>
+        <http:basic-security-filter doc:id="24c01356-53d3-4f3c-af6c-cabca6663e26" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <set-variable doc:id="e17652c1-7a44-47bf-8dcd-ab059b8f8d4a" doc:name="Set requestTime" value="#[now().milliseconds]" variableName="requestTime"/>
+        <set-variable doc:id="6be48e41-0087-419c-b88d-6bd209223d2f" doc:name="Set IP" value="#[server.ip as String default &quot;0.0.0.0&quot;]" variableName="ip"/>
+        <logger doc:id="765fe571-68c1-4f95-9c58-5205f23b4513" doc:name="Log IP And Request Time" level="INFO" message="#[&quot;RequestTime &quot; ++ vars.requestTime ++ &quot;IP address :&quot;++ vars.ip]"/>
+        <flow-ref doc:id="a100f841-44e0-4be1-b97c-4a93292ede5d" doc:name="vendor-flow" name="vendor-flow"/>
+        <logger doc:id="d12f2e3a-11c1-43f3-9cbf-8c8dcbfd1486" doc:name="Logger" level="INFO" message="#['[GetVendorData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+    </flow>
+    <flow doc:id="c30e96c0-2d31-47ea-a8cf-8afc5b5f06a6" name="HTTPS-GET-common-control-table-flow-lastrunFlow">
+        <http:listener config-ref="HTTP_Listener" doc:id="bbb0625b-eae8-4b3c-996a-d4dba3dab934" doc:name="GET Data" path="${url.getControlTable}"/>
+        <http:basic-security-filter doc:id="9c9c4eec-b7b3-4ce0-a5fa-b3fa7c249e32" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <logger doc:id="a8799ba3-232e-46bc-bd02-3be4121a1698" doc:name="Logger" level="INFO" message="Inside the HTTPS-GET-common-control-table-flow-lastrunFlow"/>
+        <flow-ref doc:id="11784241-074a-4282-8eff-b87f42584c4e" doc:name="fetchAll-data-logicFlow" name="fetchAll-data-logicFlow"/>
+    </flow>
+    <flow doc:id="1fe51c32-5370-47e4-9d2a-fa2c8791bcbc" name="HTTPS-POST-common-control-table-flow-lastrunFlow">
+        <http:listener allowedMethods="POST" config-ref="HTTP_Listener" doc:id="ecd993d6-73e7-44b9-9830-2d79ad314349" doc:name="POST Data" path="${url.postControlTable}"/>
+        <http:basic-security-filter doc:id="bb02f9b1-a4c6-4f5c-a6d8-4e3771f638d6" doc:name="Basic security filter" realm="mule">
+            <http:security-providers/>
+        </http:basic-security-filter>
+        <logger doc:id="17c713a4-c770-4275-a302-f6eba5318cd4" doc:name="Logger" level="INFO" message="Inside the HTTPS-POST-common-control-table-flow-lastrunFlow"/>
+        <ee:transform doc:id="513520e2-cd47-4872-a6fd-281904374912" doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	INTERFACE_NAME: payload.INTERFACE_NAME,
+	LAST_RUN_DATE: payload.LAST_RUN_DATE
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <db:update config-ref="Oracle_Configuration" doc:id="42b19e0a-bd95-4dc8-a177-761efed7c6c0" doc:name="Update">
+            <db:sql>UPDATE xxatc.ATC_IND_SVCS_CONTROL_TBL SET LAST_RUN_DATE=TO_DATE(:LAST_RUN_DATE,'DD-MM-YYYY HH24:MI:SS')  where INTERFACE_NAME=:INTERFACE_NAME</db:sql>
+            <db:input-parameters><![CDATA[#[{
+	"LAST_RUN_DATE" :payload.LAST_RUN_DATE,
+    "INTERFACE_NAME":payload.INTERFACE_NAME	
+
+}]]]></db:input-parameters>
+        </db:update>
+        <logger doc:id="c58ca5e8-a6b4-4ecd-b3d7-ce2c9fdad75b" doc:name="Logger" level="INFO" message="Response #[payload] POST CT flow has been completed"/>
+        <flow-ref doc:id="3f913c95-ddbc-4490-bd72-cf4ea2f06953" doc:name="fetchAll-data-logicFlow" name="fetchAll-data-logicFlow"/>
+    </flow>
+    <apikit-soap:config name="soapkit-config" port="GetLandLeaseDataPort" service="GetLandLeaseDataService" soapVersion="SOAP12" wsdlLocation="getLandLeaseData.wsdl"/>
+    <flow name="getLandLeaseData:\soapkit-config">
+        <set-variable doc:id="0e615326-12d6-4133-ac2a-38db71322100" doc:name="Set siteId" value="#[output application/json --- payload.Body.getLandLeaseData.siteId]" variableName="siteId"/>
+        <ee:transform doc:id="d84632aa-f9a5-4b29-bc25-83f5eb5fb39f">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+ns soap http://schemas.xmlsoap.org/soap/envelope
+---
+{
+    body: {
+        soap#Fault: {
+            faultcode: "soap:Server",
+            faultstring: "Operation [getLandLeaseData:\soapkit-config] not implemented"
+        }
+    } write "application/xml"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <apikit-soap:config httpStatusVarName="httpStatus" name="soapkit-config-landleaseRent" port="GetLandLeaseRentDataPort" service="GetLandLeaseRentDataService" wsdlLocation="getLandLeaseRentData.wsdl"/>
+    <flow name="getLandLeaseRentData:\soapkit-config-landleaseRent">
+        <set-variable doc:id="db3d802f-0264-4008-89d7-241a561cae72" doc:name="Set siteId" value="#[output application/json --- payload.Body.getLandLeaseRentData.siteId]" variableName="siteId"/>
+        <ee:transform doc:id="0cf1a28d-fa24-47ce-8103-0537a3666cd6">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+ns soap http://schemas.xmlsoap.org/soap/envelope
+---
+{
+    body: {
+        soap#Fault: {
+            faultcode: "soap:Server",
+            faultstring: "Operation [getLandLeaseRentData:\soapkit-config] not implemented"
+        }
+    } write "application/xml"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <apikit-soap:config httpStatusVarName="httpStatus" name="soapkit-config-GetTenantLeaseData" port="GetTenantLeaseDataPort" service="GetTenantLeaseDataService" wsdlLocation="getTenantLeaseData.wsdl"/>
+    <flow name="getTenantLeaseData:\soapkit-config-GetTenantLeaseData">
+        <ee:transform doc:name="Transform Message" doc:id="fbd1c922-5f6a-44a8-8b31-a257b738e479" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"siteId" : payload.Body.getTenantLeaseData.siteId,
+	"customerName1" : payload.Body.getTenantLeaseData.customerName1,
+	"customerName2" : payload.Body.getTenantLeaseData.customerName2,
+	"customerName3" : payload.Body.getTenantLeaseData.customerName3,
+	"customerName4" : payload.Body.getTenantLeaseData.customerName4,
+	"customerName5" : payload.Body.getTenantLeaseData.customerName5,
+	"customerName6" : payload.Body.getTenantLeaseData.customerName6,
+	"customerName7" : payload.Body.getTenantLeaseData.customerName7,
+	"customerName8" : payload.Body.getTenantLeaseData.customerName8,
+	"customerName9" : payload.Body.getTenantLeaseData.customerName9,
+	"customerName10" : payload.Body.getTenantLeaseData.customerName10,
+	"customerName11" : payload.Body.getTenantLeaseData.customerName11,
+	"customerName12" : payload.Body.getTenantLeaseData.customerName12,
+	"customerName13" : payload.Body.getTenantLeaseData.customerName13,
+	"customerName14" : payload.Body.getTenantLeaseData.customerName14,
+	"customerName15" : payload.Body.getTenantLeaseData.customerName15
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set requestData" doc:id="8ef3d40e-9e84-4788-b08a-d2bc79a96b1a" variableName="requestData"/>
+		<ee:transform doc:id="05b2ea80-8c52-4ad0-a1d4-3b4ff873fc33">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+ns soap http://schemas.xmlsoap.org/soap/envelope
+---
+{
+    body: {
+        soap#Fault: {
+            faultcode: "soap:Server",
+            faultstring: "Operation [getTenantLeaseData:\soapkit-config] not implemented"
+        }
+    } write "application/xml"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

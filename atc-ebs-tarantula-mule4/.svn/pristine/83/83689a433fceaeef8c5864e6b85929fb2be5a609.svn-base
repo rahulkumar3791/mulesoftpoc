@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:vendordatalogic.xml"/>
+         <spring:import resource="classpath:businessLogic.xml"/>
+        <spring:import resource="classpath:auditService.xml"/>
+        <spring:import resource="classpath:config.xml"/>
+        <spring:import resource="classpath:dbConfiguration.xml"/>
+        <spring:import resource="classpath:endpoints.xml"/>
+        <spring:import resource="classpath:errorHandling.xml"/>
+        <spring:import resource="classpath:leaseDataLogic.xml"/>
+    </spring:beans>
+    <munit:test name="vendordatalogic-test-suite-vendorDataExtractFlowTest-HavaData" description="Test">
+        <set-variable variableName="requestTime" value="#[server.dateTime]" doc:name="Set Request Time"/>
+        <expression-component doc:name="Set Request Data"><![CDATA[String[] param = new String[16];
+param[0] = "IN";
+param[1] = "2";
+payload = param;]]></expression-component>
+        <flow-ref name="vendorDataExtractFlow" doc:name="Flow-ref to vendorDataExtractFlow"/>
+        <munit:assert-on-equals expectedValue="SUCCESS" actualValue="#[payload.header.statusCode]" doc:name="Assert statusCode Status"/>
+        <munit:assert-on-equals expectedValue="SUCCESS" actualValue="#[payload.header.statusDescription]" doc:name="Assert statusDescription Status"/>
+    </munit:test>
+    
+    <munit:test name="vendordatalogic-test-suite-vendorDataExtractFlowTest-NoData" description="Test">
+        <set-variable variableName="requestTime" value="#[server.dateTime]" doc:name="Set Request Time"/>
+        <expression-component doc:name="Set Request Data"><![CDATA[String[] param = new String[16];
+param[0] = "IN";
+param[1] = "0";
+payload = param;]]></expression-component>
+        <flow-ref name="vendorDataExtractFlow" doc:name="Flow-ref to vendorDataExtractFlow"/>
+        <munit:assert-on-equals expectedValue="SUCCESS" actualValue="#[payload.header.statusCode]" doc:name="Assert statusCode Status"/>
+        <munit:assert-on-equals expectedValue="SUCCESS" actualValue="#[payload.header.statusDescription]" doc:name="Assert statusDescription Status"/>
+    </munit:test>
+    
+    <munit:test name="vendordatalogic-test-suite-vendorDataExtractFlowTest-ErrorRequestData" description="Test">
+        <set-variable variableName="requestTime" value="#[server.dateTime]" doc:name="Set Request Time"/>
+        <expression-component doc:name="Set Request Data"><![CDATA[String[] param = new String[16];
+param[0] = "IN";
+param[1] = "ss";
+payload = param;]]></expression-component>
+        <flow-ref name="vendorDataExtractFlow" doc:name="Flow-ref to vendorDataExtractFlow"/>
+        <munit:assert-on-equals expectedValue="ERROR" actualValue="#[payload.header.statusCode]" doc:name="Assert statusCode Status"/>
+        <munit:assert-on-equals expectedValue="The maxRecord is not integer type." actualValue="#[payload.header.statusDescription]" doc:name="Assert statusDescription Status"/>
+    </munit:test>
+    
+    <munit:test name="vendordatalogic-test-suite-vendorDataExtractFlowTest-NoMaxRecordData" description="Test">
+        <set-variable variableName="requestTime" value="#[server.dateTime]" doc:name="Set Request Time"/>
+        <expression-component doc:name="Set Request Data"><![CDATA[String[] param = new String[16];
+param[0] = "IN";
+param[1] = "";
+payload = param;]]></expression-component>
+        <flow-ref name="vendorDataExtractFlow" doc:name="Flow-ref to vendorDataExtractFlow"/>
+        <munit:assert-on-equals expectedValue="ERROR" actualValue="#[payload.header.statusCode]" doc:name="Assert statusCode Status"/>
+        <munit:assert-on-equals expectedValue="The countryCode and maxRecord are required parameters." actualValue="#[payload.header.statusDescription]" doc:name="Assert statusDescription Status"/>
+    </munit:test>
+    
+     <munit:test name="vendordatalogic-test-suite-vendorDataExtractFlowTest-NoCountryCodeData" description="Test">
+        <set-variable variableName="requestTime" value="#[server.dateTime]" doc:name="Set Request Time"/>
+        <expression-component doc:name="Set Request Data"><![CDATA[String[] param = new String[16];
+param[0] = "";
+param[1] = "2";
+payload = param;]]></expression-component>
+        <flow-ref name="vendorDataExtractFlow" doc:name="Flow-ref to vendorDataExtractFlow"/>
+        <munit:assert-on-equals expectedValue="ERROR" actualValue="#[payload.header.statusCode]" doc:name="Assert statusCode Status"/>
+        <munit:assert-on-equals expectedValue="The countryCode and maxRecord are required parameters." actualValue="#[payload.header.statusDescription]" doc:name="Assert statusDescription Status"/>
+    </munit:test>
+</mule>

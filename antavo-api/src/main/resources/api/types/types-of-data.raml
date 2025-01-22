@@ -1,0 +1,13 @@
+#%RAML 1.0 DataType
+
+type: object
+properties:
+  transaction_id:
+    type: string
+    example: "testorder1"
+  total:
+    type: string
+    example: "75"
+  items: 
+    type: array
+    items: !include items-data-types.raml

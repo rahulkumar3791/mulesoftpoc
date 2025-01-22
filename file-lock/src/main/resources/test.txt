@@ -1,0 +1,1 @@
+You can set lock parameter to true so that other processes can not access the same file while it is being read. If the file is already lock and some other process trying to lock it the operation will throws File Lock Error

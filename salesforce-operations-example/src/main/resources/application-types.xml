@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="ContactData" format="json">
+      <types:shape format="weave" example="examples/data.json"><![CDATA[%dw 2.0
+
+type ContactData = Array<{|  firstName: String,   lastName: String,   email: String,   mobile: String|}> {"example": "[{\\\"firstName\\\":\\\"Rahul\\\",\\\"lastName\\\":\\\"Kumar\\\",\\\"email\\\":\\\"rahul@gmail.com\\\",\\\"mobile\\\":\\\"23487374\\\"},{\\\"firstName\\\":\\\"Adam\\\",\\\"lastName\\\":\\\"Smith\\\",\\\"email\\\":\\\"adam@gmail.com\\\",\\\"mobile\\\":\\\"8765555\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#f0c6c78d-6bfa-4573-8f6b-4ba18a20f5e4">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="ContactData"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

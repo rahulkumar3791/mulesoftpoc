@@ -1,0 +1,153 @@
+{
+  "version": "1.0.0",
+  "artifactCoordinates": {
+    "groupId": "com.mycompany",
+    "artifactId": "net-tools-api",
+    "version": "2.2.0",
+    "type": "jar",
+    "classifier": "mule-application"
+  },
+  "dependencies": [
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.connectors",
+        "artifactId": "mule-http-connector",
+        "version": "1.5.0",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/connectors/mule-http-connector/1.5.0/mule-http-connector-1.5.0-mule-plugin.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.connectors",
+        "artifactId": "mule-sockets-connector",
+        "version": "1.1.4",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/connectors/mule-sockets-connector/1.1.4/mule-sockets-connector-1.1.4-mule-plugin.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.modules",
+        "artifactId": "mule-apikit-module",
+        "version": "1.1.7",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/modules/mule-apikit-module/1.1.7/mule-apikit-module-1.1.7-mule-plugin.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.modules",
+        "artifactId": "mule-spring-module",
+        "version": "1.2.0",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/modules/mule-spring-module/1.2.0/mule-spring-module-1.2.0-mule-plugin.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-context",
+        "version": "4.3.17.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/spring-context/4.3.17.RELEASE/spring-context-4.3.17.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-aop",
+        "version": "4.3.17.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/spring-aop/4.3.17.RELEASE/spring-aop-4.3.17.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-expression",
+        "version": "4.3.17.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/spring-expression/4.3.17.RELEASE/spring-expression-4.3.17.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework.security",
+        "artifactId": "spring-security-core",
+        "version": "4.2.6.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/security/spring-security-core/4.2.6.RELEASE/spring-security-core-4.2.6.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "aopalliance",
+        "artifactId": "aopalliance",
+        "version": "1.0",
+        "type": "jar"
+      },
+      "uri": "repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-beans",
+        "version": "4.3.17.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/spring-beans/4.3.17.RELEASE/spring-beans-4.3.17.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework.security",
+        "artifactId": "spring-security-config",
+        "version": "4.2.6.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/security/spring-security-config/4.2.6.RELEASE/spring-security-config-4.2.6.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-core",
+        "version": "4.3.17.RELEASE",
+        "type": "jar"
+      },
+      "uri": "repository/org/springframework/spring-core/4.3.17.RELEASE/spring-core-4.3.17.RELEASE.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "commons-logging",
+        "artifactId": "commons-logging",
+        "version": "1.2",
+        "type": "jar"
+      },
+      "uri": "repository/commons-logging/commons-logging/1.2/commons-logging-1.2.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.modules",
+        "artifactId": "mule-scripting-module",
+        "version": "1.1.1",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/modules/mule-scripting-module/1.1.1/mule-scripting-module-1.1.1-mule-plugin.jar"
+    },
+    {
+      "artifactCoordinates": {
+        "groupId": "org.mule.module",
+        "artifactId": "mule-java-module",
+        "version": "1.1.1",
+        "type": "jar",
+        "classifier": "mule-plugin"
+      },
+      "uri": "repository/org/mule/module/mule-java-module/1.1.1/mule-java-module-1.1.1-mule-plugin.jar"
+    }
+  ]
+}

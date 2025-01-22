@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="2b5e231b-1256-4bbf-b961-0a1edcfef192" >
+		<file:connection workingDir="D:\workspace-zenni\split-large-file" />
+	</file:config>
+	<flow name="split-large-fileFlow" doc:id="f11e0d80-ebf7-4bdb-8c0b-ef973098473e" >
+		<file:listener doc:name="On New or Updated File" doc:id="e5ab9d70-7337-49f8-89d4-aaeeb8078035" config-ref="File_Config" directory="src/main/resources" autoDelete="true" outputMimeType='application/csv; streaming=true; header=true; bodystartlinenumber=1; separator=","; escape=","; headerlinenumber=0'>
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000" startDelay="20"/>
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="9395f77d-6a30-49ee-ba47-d450339d81fa" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+@StreamCapable
+input paylaod application/csv
+output application/json deferred=true
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="92ff87f6-2b67-49ff-add9-046ce13f8fc5" batchSize="10000">
+			<ee:transform doc:name="Transform Message" doc:id="8cc31e88-2f86-47e4-b42f-8e70ba3d1dd4" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+payload map(item,idx)-> ({
+	"Index":item.Index,
+	"Organization Id":item.'Organization Id',
+	"Name": item.Name,
+	"Website" : item.Website,
+	"Country":item.Country,
+	"Description": item.Description,
+	"Founded": item.Founded,
+	"Industry":item.Industry,
+	"Number of employees" : item.'Number of employees'	
+})]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="752a3a85-8b49-46dc-869f-b572744add8e" message='---------------------file spliting-----------'/>
+			<file:write doc:name="Write" doc:id="14350605-9024-4aa8-ac43-61fa34fcd1cc" config-ref="File_Config" path='#["D:\\Mule-2023\\split-files-with-mule\\multiple-files\\" ++ uuid()++ ".csv"]'/>
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="97f9d782-0bed-4dd9-8f22-fec9bb9c6c09" message="=============processing completed==========="/>
+	</flow>
+</mule>

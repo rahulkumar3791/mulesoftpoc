@@ -1,0 +1,55 @@
+{
+  "configs": [
+    "email-audit-service.xml",
+    "config.xml",
+    "email-audit-interface.xml",
+    "com/atc/edificio/update-edificio.xml",
+    "endpoints.xml",
+    "healthcheck.xml",
+    "com/atc/sitios/update-sitios.xml"
+  ],
+  "secureProperties": [
+    "tls.key.password",
+    "tls.store.password",
+    "https.password",
+    "email.audit.db.password",
+    "cm.db.password",
+    "sam.db.password"
+  ],
+  "redeploymentEnabled": true,
+  "name": "atc-mexico-fiber",
+  "minMuleVersion": "4.2.1",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "application-types.xml",
+        "beans.xml",
+        "com/atc/edificio/update-edificio.xml",
+        "com/atc/sitios/update-sitios.xml",
+        "config.xml",
+        "email-audit-interface.xml",
+        "email-audit-service.xml",
+        "endpoints.xml",
+        "healthcheck.xml",
+        "keystore",
+        "log4j2.xml",
+        "resources-dev.properties",
+        "resources-prod.properties",
+        "resources-qc.properties",
+        "resources-uat.properties",
+        "success-failed-error-email.html"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {
+      "exportedResources": [
+        "src/main/resources/beans.xml"
+      ]
+    }
+  }
+}

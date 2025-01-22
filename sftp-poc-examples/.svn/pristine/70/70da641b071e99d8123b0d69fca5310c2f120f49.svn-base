@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<db:config name="Email_Audit_Database_Config" doc:name="Database Config" doc:id="5309d073-3c19-494a-bade-770b2f2de298" >
+		<db:oracle-connection host="${audit.email.db.host}" port="${audit.email.db.port}" user="${audit.email.db.user}" password="${audit.email.db.password}" instance="${audit.email.db.sid}" />
+	</db:config>
+	<flow name="email-audit-notificationFlow" doc:id="6c638ea3-e48e-44c6-8afa-0ffbec728493" >
+		<logger level="INFO" doc:name="Logger" doc:id="33d56e45-f6f1-4169-ab46-ee023edabca7" message="#['-----email and audit flow starts------']"/>
+		<flow-ref doc:name="insert-email-records-in-db-flow-ref" doc:id="4449910e-4e08-4222-b7ca-3967b9c645cf" name="insert-email-records-in-db" />
+		<flow-ref doc:name="insert-audit-records-in-db-flow-ref" doc:id="ac8c2c5c-2d86-4bcb-ba33-67660cd4e3fc" name="insert-audit-records-in-db" />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="45c284fd-4023-4d12-8a3d-a2a86ccd367d" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="8960f79d-56c8-4c38-a4ec-edc127026e1a" message="### error while inserting data in audit table###"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="insert-audit-records-in-db" doc:id="a7ef3b32-92b9-40c7-8a7b-bc0725ef8df5" >
+		<logger level="INFO" doc:name="Logger" doc:id="1d52aa53-a4b7-4f30-9d1c-7b65b3f30150" message="--inserting audit record---"/>
+		<set-variable value="#[%dw 2.0
+output application/dw
+---
+if(vars.status=='Failed')
+'{&quot;status&quot; :  { &quot;code&quot;: &quot;' ++ (vars.status default 'Success') ++ '&quot; , &quot;message&quot;:&quot;COMPLETE&quot; },&quot;data&quot;:{&quot;timestamp&quot;: &quot;' ++ now() as DateTime {format: &quot;dd-mm-yyyy'T'hh:mm:ss&quot;} ++ '&quot; ,&quot;Error&quot;: &quot;' ++  vars.errorMsg default &quot;ERROR&quot; ++ '&quot; }}'
+
+else 
+'{&quot;status&quot; :  { &quot;code&quot;: &quot;' ++ (vars.status default 'Success') ++ '&quot; , &quot;message&quot;:&quot;COMPLETE&quot; },&quot;data&quot;:{&quot;timestamp&quot;: &quot;' ++ now() as DateTime {format: &quot;dd-mm-yyyy'T'hh:mm:ss&quot;} ++ '&quot; ,&quot;fileName&quot;: &quot;' ++  (vars.successList reduce ( (v,k = '') -&gt; k ++ v ++ ','))[0 to -2]  default &quot;None&quot; ++ '&quot; }}']" doc:name="Set Audit Data" doc:id="9adeb7b4-76b3-4a49-ae5c-4ece2bb375a9" variableName="auditData"/>
+		<ee:transform doc:name="Transform Message" doc:id="c3affb0d-719b-4c68-9488-00f92a9b4e43" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"service_name": p('current.project.name'),
+	"value": vars.auditData,
+	"requester_ip": vars.ip default '0.0.0.0',
+	"interface_number": if(vars.flowName == 'Payment') p('serengeti.payment.current.project.id') else p('serengeti.invoice.current.project.id'),
+	"interface_type": p('current.project.type')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="7c682055-29f4-432c-80b1-983206b3aa6e" config-ref="Email_Audit_Database_Config">
+			<db:sql >insert into atc_services_audit(requester_ip, created_on, service_name, interface_number, interface_type, value) values(:requester_ip, sysdate, :service, :interface_number, :interface_type, :value)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"requester_ip":payload.requester_ip default '0.0.0.0',
+	"service":payload.service_name,
+	"interface_number":payload.interface_number,
+	"interface_type":payload.interface_type,
+	"value":payload.value	
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="00038700-075e-4cae-9a8b-7a12ef5a0ef3" message="#['successfully inserted audit for file  ' ++ vars.pathFileName default null]"/>
+	</flow>
+	<flow name="insert-email-records-in-db" doc:id="5ff4c108-6df4-40e2-9b68-5b53ad40ee72" >
+		<logger level="INFO" doc:name="Logger" doc:id="a340ea13-ce77-4388-8f49-8b1a89143011" message="#['Sending email for file ' ++ vars.pathFileName ++ ' with status ' ++ vars.status default &quot;&quot;]"/>
+		<set-variable value="#[&quot;[&quot; ++ p('current.environment') ++ &quot;][&quot; ++ p('current.project.name') ++ &quot;][&quot; ++ vars.status default &quot;&quot; ++ &quot;]&quot;]" doc:name="Set Email Subject" doc:id="db3d4a13-ac0e-4a4d-9db2-ad5974e154e4" variableName="subject"/>
+		<set-variable value="#[%dw 2.0
+output application/dw
+---
+if(vars.flowName == 'Payment')
+&quot;&lt;b&gt;Interface Name: &quot; ++ p('current.project.type') ++ &quot;&lt;/b&gt;,
+&lt;br/&gt; Integration ID: &quot; ++ p('serengeti.payment.current.project.id') ++ &quot;,
+&lt;br/&gt; Date and Time: &quot; ++ now() as DateTime {format: &quot;dd-mm-yyyy'T'hh:mm:ss&quot;} ++ &quot;,
+&lt;br/&gt; Service Name: &quot; ++ p('current.project.name')
+
+else
+&quot;&lt;b&gt;Interface Name: &quot; ++ p('current.project.type') ++ &quot;&lt;/b&gt;,
+&lt;br/&gt; Integration ID: &quot; ++ p('serengeti.invoice.current.project.id') ++ &quot;,
+&lt;br/&gt; Date and Time: &quot; ++ now() as DateTime {format: &quot;dd-mm-yyyy'T'hh:mm:ss&quot;} ++ &quot;,
+&lt;br/&gt; Service Name: &quot; ++ p('current.project.name')]" doc:name="Set Initial Email Body" doc:id="f8a55008-bf80-422c-a1ae-63a736088f70" variableName="emailBody" />
+		<ee:transform doc:name="Transform Message" doc:id="b436687d-037e-48f7-9ca7-75dab5ce66be">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+if(vars.status=='Failed')
+	vars.emailBody ++ '<br> An exception occurred during processing of file - ' ++ vars.filePathName default "List SFTP" ++ '</br>' ++ '<br> Date and Time : ' ++ now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"} ++ '</br>' ++ '<br> Exception Details : ' ++ vars.errorMsg default "ERROR" ++ '</br>'
+else 
+	vars.emailBody ++ '<br> Files : ' ++ (vars.successList reduce ( (v,k = '') -> k ++ v ++ ','))[0 to -2]  default "None" default "" ++  ' files successfully moved from AWServer to Oracle R11 server.</br>' ++ '<br> Date and Time : ' ++ now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"} ++ '</br>'
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="ddb1911f-5bbe-486a-9e6f-2546a32dd070" config-ref="Email_Audit_Database_Config">
+			<db:sql >insert into atc_services_email (ENVIORNMENT,INTERFACE_NUMBER,SUCCESS,SUBJECT,DELIVERY_REQUIRED,EMAIL_CONTENT,EMAIL_RECEPIENTS,CREATED_ON)
+values(:ENVIORNMENT,:INTERFACE_NUMBER,:SUCCESS,:SUBJECT,:DELIVERY_REQUIRED,:EMAIL_CONTENT,:EMAIL_RECEPIENTS,sysdate)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"ENVIORNMENT": p('current.environment') default null,
+	"INTERFACE_NUMBER" : p('interface.id') default null,
+	"SUCCESS" : vars.status default null,
+	"SUBJECT" : vars.subject default null,
+	"DELIVERY_REQUIRED" : "Y",
+	"EMAIL_CONTENT" : payload,
+	"EMAIL_RECEPIENTS" : p('to.sftp.email') default null
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="ff0d84d5-c4d0-42d1-a426-c9f1aa95a2fb" message="#['Successfully inserted email record for file Name - ' ++ vars.pathFileName default &quot;&quot;]"/>
+	</flow>
+</mule>

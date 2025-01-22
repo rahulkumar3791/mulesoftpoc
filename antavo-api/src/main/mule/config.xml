@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3bbdafb6-ae19-44ec-ac04-d72170dbfd70">
+		<http:listener-connection host="0.0.0.0" port="${https.port}" tlsContext="TLS_Context" protocol="HTTPS"/>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="ba96148a-ebfb-4a1c-aec2-bac74c43e618" file="resources-${prop.env}.properties" />
+	<tls:context name="TLS_Context" doc:name="TLS Context" doc:id="6c10cb67-3741-4381-901f-3e5d509649c9" >
+		<tls:key-store type="jks" keyPassword="${tls.key.password}" password="${tls.store.password}" path="keystore.jks"/>
+	</tls:context>
+	<global-property doc:name="Global Property" doc:id="d9ef92c4-65d0-43a9-ac85-0bbbfc29a5c3" name="prop.env" value="dev" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="41cfc141-28c3-4476-a85e-933621350e07" >
+		<http:request-connection host="${antavo.api.host.name}" protocol="HTTPS"/>
+	</http:request-config>
+	<configuration doc:name="Configuration" doc:id="2d78756d-0bb2-4845-9f5b-5b6913b59a6f" defaultErrorHandler-ref="error-handlingError_Handler" />
+	<api-gateway:autodiscovery apiId="${autodiscovery.api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="d88e0b25-8cf7-4a50-ae2c-de86cd93a6df" flowRef="antavo-api-main" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="bb26a33c-c242-4319-ac36-2e281972fc72" file="application-${prop.env}.properties" key="${secure.property.key}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+</mule>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="78d57832-b7a3-494b-9cc8-5d22fbd62c42" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="parallel-foreach-exampleFlow" doc:id="1753be2a-3b44-4847-b2c2-9e2579c68fca" >
+		<http:listener doc:name="Listener" doc:id="8e93a49a-e6e8-4361-bfc0-d94a58d1644b" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="1d1fe7bf-551a-4b4e-8b57-98c68b485fe9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+    {
+      "name": "Tom Cruise",
+      "age": 56,
+      "Born At": "Syracuse, NY",
+      "Birthdate": "July 3, 1962",
+      "photo": "https://jsonformatter.org/img/tom-cruise.jpg"
+    },
+    {
+      "name": "Robert Downey Jr.",
+      "age": 53,
+      "Born At": "New York City, NY",
+      "Birthdate": "April 4, 1965",
+      "photo": "https://jsonformatter.org/img/Robert-Downey-Jr.jpg"
+    }
+ ]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="a37a14be-c4cf-40ab-bddd-9069ceefe328" collection="#[payload]">
+			<ee:transform doc:name="Transform Message" doc:id="1794625f-4a82-4236-b2dd-74e8328d907c" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.name ++ "---" ++ now() ]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</parallel-foreach>
+		<ee:transform doc:name="Transform Message" doc:id="552c5315-08d7-4f0d-90f8-51c6ee160a80" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map $.payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

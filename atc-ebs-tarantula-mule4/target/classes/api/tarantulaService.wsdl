@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<wsdl:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://vendor.ebs.atc.com/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns1="http://schemas.xmlsoap.org/soap/http" name="GetVendorDataService" targetNamespace="http://vendor.ebs.atc.com/">
+    <wsdl:types>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://vendor.ebs.atc.com/" attributeFormDefault="unqualified" elementFormDefault="unqualified" targetNamespace="http://vendor.ebs.atc.com/">
+            <xs:element name="getVendorData" type="tns:getVendorData"/>
+            <xs:element name="getVendorDataResponse" type="tns:getVendorDataResponse"/>
+            <xs:complexType name="getVendorData">
+                <xs:sequence>
+                    <xs:element name="countryCode" type="xs:string"/>
+                    <xs:element name="maxRecord" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="getVendorDataResponse">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="response" type="tns:getVendorDataServiceResponse"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="getVendorDataServiceResponse">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="exception" type="xs:string"/>
+                    <xs:element minOccurs="0" name="header" type="tns:header"/>
+                    <xs:element minOccurs="0" name="vendors" type="tns:vendors"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="header">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="statusCode" type="xs:string"/>
+                    <xs:element minOccurs="0" name="statusDescription" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="vendors">
+                <xs:sequence>
+                    <xs:element maxOccurs="unbounded" minOccurs="0" name="vendor" nillable="true" type="tns:vendor"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="vendor">
+                <xs:sequence>
+                    <xs:element name="addressLine1" type="xs:string"/>
+                    <xs:element name="addressLine2" type="xs:string"/>
+                    <xs:element name="addressLine3" type="xs:string"/>
+                    <xs:element minOccurs="0" name="circle" type="xs:string"/>
+                    <xs:element name="city" type="xs:string"/>
+                    <xs:element name="emailAddress" type="xs:string"/>
+                    <xs:element name="endDateActive" type="xs:string"/>
+                    <xs:element name="firstName" type="xs:string"/>
+                    <xs:element name="lastName" type="xs:string"/>
+                    <xs:element name="middleName" type="xs:string"/>
+                    <xs:element name="phone" type="xs:string"/>
+                    <xs:element name="prefix" type="xs:string"/>
+                    <xs:element name="startDateActive" type="xs:string"/>
+                    <xs:element name="state" type="xs:string"/>
+                    <xs:element minOccurs="0" name="vendorCode" type="xs:string"/>
+                    <xs:element name="vendorName" type="xs:string"/>
+                    <xs:element minOccurs="0" name="vendorSiteCode" type="xs:string"/>
+                    <xs:element name="vendorType" type="xs:string"/>
+                    <xs:element name="zip" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Exception" type="tns:Exception"/>
+            <xs:complexType name="Exception">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="message" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name="Exception">
+        <wsdl:part element="tns:Exception" name="Exception">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getVendorDataResponse">
+        <wsdl:part element="tns:getVendorDataResponse" name="parameters">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getVendorData">
+        <wsdl:part element="tns:getVendorData" name="parameters">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:portType name="GetVendorData">
+        <wsdl:operation name="getVendorData">
+            <wsdl:input message="tns:getVendorData" name="getVendorData">
+    </wsdl:input>
+            <wsdl:output message="tns:getVendorDataResponse" name="getVendorDataResponse">
+    </wsdl:output>
+            <wsdl:fault message="tns:Exception" name="Exception">
+    </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="GetVendorDataServiceSoapBinding" type="tns:GetVendorData">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="getVendorData">
+            <soap:operation soapAction="" style="document"/>
+            <wsdl:input name="getVendorData">
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="getVendorDataResponse">
+                <soap:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="Exception">
+                <soap:fault name="Exception" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="GetVendorDataService">
+        <wsdl:port binding="tns:GetVendorDataServiceSoapBinding" name="GetVendorDataPort">
+            <soap:address location="https://localhost:8088/api/soap/tarantulaService"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

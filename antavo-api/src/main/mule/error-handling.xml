@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd">
+	
+	<cloudhub:config name="CloudHub_Config" doc:name="CloudHub Config" doc:id="20a6ff67-84f4-4ac2-a7c1-bec65f7fca3c" >
+		<cloudhub:connection username="${secure::mule.cloudhub.username}" password="${secure::mule.cloudhub.password}" environment="${secure::mule.cloudhub.environment.id}" />
+	</cloudhub:config>
+	<flow name="error-handlingFlow" doc:id="cbc8344b-a3c0-4fe9-a902-3d5371d327db" >
+		<logger level="INFO" doc:name="Error Flow Started" doc:id="f41e543d-70f0-43a1-b165-55782628817c" message="=========Error Flow Started============" />
+		<set-variable value="#[if(error.errorType.identifier == 'TIMEOUT') '500' else error.muleMessage.attributes.StatusCode]" doc:name="Set errorCode" doc:id="a473ea0b-0768-4356-80d1-b7137589d9f4" variableName="errorCode"/>
+		<logger level="INFO" doc:name="Log Error" doc:id="a4f20db3-12c2-46d3-85ff-852df1e9c305" message="#[error.detailedDescription]"/>
+		<ee:transform doc:name="Error Response" doc:id="5636254a-6cc4-4654-9a58-954d1f6479f8">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+if(error.errorType.identifier == 'TIMEOUT' or error.errorType.identifier == 'Timeout') {
+  "error": {
+    "type": "TimeoutException",
+    "code": 500,
+    "message": "Request got timeout."
+  }
+}
+else 
+ error.muleMessage.typedValue
+]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set errorResponse" doc:id="528eee46-f1af-49ab-b481-cdd4c6e6a3de" variableName="errorResponse"/>
+		<flow-ref doc:name="error-handling-mule-alertFlow Reference" doc:id="fd0672d0-d826-4f8b-aba7-a3b7d66a42d6" name="error-handling-mule-alertFlow"/>
+		<set-payload value="#[vars.errorResponse]" doc:name="Set ErrorPayload" doc:id="56677d0f-e0dc-4cc0-9f85-d4d7e2305364" />
+		<logger level="INFO" doc:name="Log Error Response" doc:id="8b5e3c53-e488-4850-a24c-29c0d06eaf12" message="#[payload]"/>
+		<logger level="INFO" doc:name=" Error Flow completed " doc:id="c0235f5f-6d94-4b20-8e40-c7c868904244" message="######### Error Flow completed #############"/>
+	
+</flow>
+	<flow name="error-handling-mule-alertFlow" doc:id="e3a2f7a5-06d2-4977-baf7-16af133a34b6" >
+		<parse-template doc:name="Parse Template" doc:id="54346b80-afa5-4930-853a-6a646b0c7909" location="errorEmailBody.html" />
+		<cloudhub:create-notification doc:name="Create Notification" doc:id="74ecc423-da06-4c79-9f12-1621d3d1bcf7" config-ref="CloudHub_Config" domain="antavo-api-dev" priority="INFO">
+		</cloudhub:create-notification>
+	</flow>
+	<error-handler name="error-handlingError_Handler" doc:id="ffc01416-c632-4040-9f9f-fd3368b9128e" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f1257447-3a65-43a6-9fac-b90e1e7d1939" >
+			<ee:transform doc:name="Transform Message" doc:id="17eb677b-788d-46f9-b2a9-765c5664d7ae">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"error" : error
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<cloudhub:create-notification domain="antavo-api-prod" doc:name="Create Notification" doc:id="808d263a-1aa7-4951-8329-2fa842281f07" config-ref="CloudHub_Config" priority="INFO">
+				<cloudhub:message><![CDATA[#[write(payload,'application/json')]]]></cloudhub:message>
+			</cloudhub:create-notification>
+		</on-error-propagate>
+	</error-handler>
+	
+	
+	
+</mule>

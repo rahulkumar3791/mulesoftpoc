@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d2963f8a-667e-4e70-b011-95700aabb908" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="b6413eaa-8728-4df1-b9ae-57103d5f8fdd" >
+		<salesforce:basic-connection username="rahulkr@ps.sandbox" password="Rahul@$00211" securityToken="ZXXDIT9Eqn8Rs1ekCxovQ5EF" />
+	</salesforce:sfdc-config>
+	<flow name="salesforce-operations-create" doc:id="41fa3a2f-19d0-4641-aeba-b1626c7e622f" >
+		<http:listener doc:name="Listener" doc:id="2e29f08f-ff9d-4103-a405-b6903353ee86" config-ref="HTTP_Listener_config" path="/accounts"/>
+		<ee:transform doc:name="Input" doc:id="02706ca0-c8e7-44cd-811d-6cb4e91fed45" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	"name": "Rahul Kumar ",
+	"billingAddress": "2 Place Jussieu",
+	"billingCity": "Gurgoan",
+	"billingCountry": "Haryana",
+	"billingPostalCode": "75251",
+	"billingState": "HR"
+},
+   {
+	"name": "Nitish Kumar Kumar ",
+	"billingAddress": "2 Place Jussieu",
+	"billingCity": "Paris",
+	"billingCountry": "France",
+	"billingPostalCode": "75251",
+	"billingState": "BH"
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="6b7916b4-0129-40f4-8120-3b2d1fc82672" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item,index) -> {
+	"Name": item.name,
+	"BillingStreet": item.billingAddress,
+	"BillingCity": item.billingCity,
+	"BillingCountry": item.billingCountry,
+	"BillingPostalCode": item.billingPostalCode,
+	"BillingState": item.billingState
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="cbd97fab-87a6-458e-a830-cd73a512832b" config-ref="Salesforce_Config" type="Account"/>
+		<ee:transform doc:name="Transform Message" doc:id="3484483f-221f-4a06-8616-c7c3dad5b665" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:select doc:name="Select" doc:id="5f9dea56-67ca-478e-8eec-dd9fc238a126" >
+		</db:select>
+		<file:read doc:name="Read" doc:id="162394a9-8d6b-4c4f-8d9f-cad30bd7d900" />
+		<sftp:read doc:name="Read" doc:id="09c6b691-8797-41e0-b40a-0225acd172cd" />
+	</flow>
+</mule>

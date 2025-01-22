@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="68213c13-39bc-4f84-af75-14432e925a43" >
+		<http:listener-connection host="${https.host}" port="${https.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store path="keystore" keyPassword="${tls.store.password}" password="${tls.key.password}" type="jks"/>
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<flow name="sftp-endpoints" doc:id="a6b3c0d1-a5d9-4a12-b738-0ee7b5f2b8be" maxConcurrency="1">
+		<http:listener doc:name="Listener" doc:id="cf9558ba-6106-49b4-8a76-81344716f37d" config-ref="HTTP_Listener_config" path="/sftp"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="bd86c9fd-2ec4-47f4-a8c4-df77a3b54658" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<logger level="INFO" doc:name="Logger" doc:id="3a278770-114d-4b5b-8757-3e1566054145" message="## SFTP endpoint flow started ###"/>
+		<flow-ref doc:name="sftp-flow" doc:id="beabb5b0-f6fe-4d49-9686-352bd025bc32" name="sftp-Flow" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="453698e4-3c95-45c3-9180-3ac1a2b9e939" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="bb370e26-cf35-45ff-b76f-fd48b19bd1b1" message="#['error in sftp endpoint flow : ' ++ error.detailedDescription default 'ERROR']"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	
+</mule>

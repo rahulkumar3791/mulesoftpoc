@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="healthcheckFlow" doc:id="9b392e00-48fb-4091-8379-3f90117f0731" >
+		<http:listener doc:name="Listener" doc:id="d73ac915-ae49-4e34-aadd-4586109705cb" config-ref="HTTP_Listener_config" path="/api/health"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="529bec10-daac-49fa-a1fb-d88c32b0b9e8" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<logger level="INFO" doc:name="Logger" doc:id="c6654b4e-9bd3-4113-b656-4fbbc4d40fdf" message="####healthFlow endpoint starts###"/>
+		<flow-ref doc:name="health:\\atc-oracle-r11-sftp-health" doc:id="a399f494-259a-406e-bcdd-22bfd636f3d1" name="health:\\sftp-health"/>
+		<ee:transform doc:name="Transform Message" doc:id="292c731f-7506-4ac4-9eee-90bdda7b9831">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  health: vars.sftpHealthStatus
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="health:\\sftp-health" doc:id="6b315916-02fb-4aae-85e3-b703904b8926" >
+		<sftp:list doc:name="List" doc:id="edce030d-27ce-4898-9d4e-f22f3e7d2454" config-ref="SFTP_Config" directoryPath="#['/']"/>
+		<set-variable value="#['GOOD']" doc:name="sftp-server-response" doc:id="d34cd137-a5f3-4e67-8784-349f2f58ba26" variableName="sftpHealthStatus"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="95a5a0fb-d881-4218-9c58-4d35a2192c8d" >
+				<set-variable value="#['BAD']" doc:name="sftp-server-response" doc:id="628ec077-bc07-4663-8832-8f45a896d4d9" variableName="sftpHealthStatus"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

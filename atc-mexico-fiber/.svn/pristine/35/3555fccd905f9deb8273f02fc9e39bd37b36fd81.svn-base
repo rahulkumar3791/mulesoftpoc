@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="update-edificiosFlow" doc:id="1b68f0a3-8999-4d92-8dfe-abd3cd416325" >
+		<logger level="INFO" doc:name="Flow Started" doc:id="5d758de5-72b3-40b5-a1e7-ae5ea43c5c43" message="###EDIFICIO Flow is started ####"/>
+		<flow-ref doc:name="count-flow" doc:id="94546e7c-ef57-40cb-8061-8b5668ef07d2" name="count-flow"/>
+		<set-variable value="edificio" doc:name="Set edificio" doc:id="ab02ed32-38b4-4d94-b1ce-ebcba2ba964c" variableName="edificio"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="f682966d-dd7e-45d3-83cd-4b51ebafc7a5" variableName="ip"/>
+		<set-variable value="#[[]]" doc:name="Initialize recordlist" doc:id="2d8a2d3e-53f4-4744-91a7-2de8a4c4b1ea" variableName="recordlist"/>
+		<set-variable value="success" doc:name="Set Status" doc:id="34710073-c4c8-417c-b744-d010564617f4" variableName="status"/>
+		<db:select doc:name="EDIFICIO Fetch Records" doc:id="2a99a29a-0962-4c15-abd9-fc61a4543f31" config-ref="CM_Database_Config">
+			<db:sql >select ID,NOMBRE,CALLE,NUMERO,DESCRIPCION,LATITUD,LONGITUD,DELEGACION from cmsys.EDIFICIO</db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="Fetch Records Logs" doc:id="774471e9-29b0-428e-a68c-3dcdb0bcfbfc" message='#["EDIFICIO Total Count fetched from DB : " ++ sizeOf(payload)]'/>
+		<choice doc:name="Choice" doc:id="a5bb0b6b-fc57-445e-a73e-6d5e4d75073e" >
+			<when expression="#[sizeOf(payload) &gt; 0 and payload != null]">
+				<flow-ref doc:name="edificio-data-move-flow" doc:id="5d740b20-5db9-4e8f-ac49-e935e62b135f" name="edificio-data-move-flow"/>
+				<ee:transform doc:name="Email Audit Payload" doc:id="2bd3a30c-e49d-44ea-b62e-f034bf02fc6f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('edificio.current.project.id') ,
+   "interface_type": p('current.project.type') as String ,
+   "requester_ip": vars.ip,
+   "status": {
+         "code": vars.status,
+          "id" : null,
+          "message": "REQUEST COMPLETE"
+     },
+     "data": '{"service": " updateEdificios",
+          "SAMResponse": "Records Inserted Successfully",
+          "No. of row updated" : ' ++ vars.insertRowCount ++ ',
+          "No. of Failed Records " : ' ++ vars.failedRowCount ++ ',
+          "status":  ' ++ vars.status ++ '
+         }' 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="b6b5ff8c-01f5-44b0-b86c-281cb0eb698d" name="send-email-audit-Flow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="No Record Found" doc:id="0722dfc7-5ca1-42de-b553-bc4123dc2f92" message="##### No Record Found in EDIFICIO DB for Processing ########"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Flow Completed" doc:id="f694df49-d1eb-4e22-9bca-6f3d1dc7615e" message="###EDIFICIO Flow is Completed ####"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ee87d783-3bc4-41fa-a9a6-85417e7be48c" type="ANY">
+				<set-variable value="#[error.detailedDescription]" doc:name="Set Error Message" doc:id="69eee010-409e-4242-8ab1-866eafa5d108" variableName="errorMsg"/>
+				<set-variable value="Failed" doc:name="Set Status" doc:id="3a9d4297-d93f-4eda-9721-1ccd643e7476" variableName="status"/>
+				<logger level="INFO" doc:name="Error Logs" doc:id="27f90fb3-eb71-4d4f-a533-919590de052a" message='#["[EDIFICIO] Error in update-edificiosFlow : " ++ vars.errorMsg]'/>
+				<ee:transform doc:name="Email Audit Payload" doc:id="8ebf71c2-69ec-435b-9538-e79a74f7ae32" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('edificio.current.project.id') ,
+   "interface_type": p('current.project.type'),
+    "requester_ip": vars.ip,
+   "status": {
+         "code": vars.status,
+         "message":vars.errorMsg default "ERROR",
+    },
+    "data": '{
+          "service": " updateEdificios",
+          "SAMResponse": "Records not Inserted",
+          "status": ' ++ vars.status ++ ' ,
+          "Error" : ' ++ vars.errorMsg ++ '
+         }'
+
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="d45d609d-d095-4122-baf2-afd99562b523" name="send-email-audit-Flow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="edificio-data-move-flow" doc:id="76b68290-4531-48a5-bb23-6555b5b0eb2f" >
+		<foreach doc:name="For Each" doc:id="371bcde0-ae92-4b78-88ac-0d6c297059cf" collection="#[payload]">
+			<set-variable value='#[output application/java --- (vars.recordlist default []) + ({"ID" : payload.ID as String  default "", "NOMBRE": payload.NOMBRE default "","CALLE": payload.CALLE default "","NUMERO": payload.NUMERO default "","DESCRIPCION": payload.DESCRIPCION default "","LATITUD": payload.LATITUD default "","LONGITUD": payload.LONGITUD default "","DELEGACION": payload.DELEGACION default ""})]' doc:name="Add list" doc:id="9b0892b7-ba2c-489d-b01b-5b1cd0641863" variableName="recordlist" />
+		</foreach>
+		<set-variable value="#[0]" doc:name="Initialize insertRowCount" doc:id="6bf79a11-f98b-4816-9752-939d84a6faba" variableName="insertRowCount"/>
+		<set-variable value="#[0]" doc:name="Initialize failedRowCount" doc:id="6a300739-e06e-4998-a879-59fce751bcc6" variableName="failedRowCount"/>
+		<set-payload value="#[%dw 2.0
+import * from dw::core::Arrays
+output application/java
+---
+
+vars.recordlist default [] divideBy p('edificio.bulk.update.batch.size')]" doc:name="Split List" doc:id="0448c303-bf2d-42bc-8a8f-7053e299677e" />
+		<foreach doc:name="For Each" doc:id="b0b79ef7-45bc-42e0-bee1-a1a23267eadd">
+					<set-variable value="#[(payload.ID reduce ( (v,k=&quot;&quot;) -&gt; k++ v++ ','))[0 to -2]  default &quot;None&quot;]" doc:name="Set ID" doc:id="a0ce35a0-3b57-45bc-aa60-004116e19d3d" variableName="tableID"/>
+			<try doc:name="Try" doc:id="22f02887-20df-48fd-b2fa-7154b32e4d8a" transactionalAction="ALWAYS_BEGIN">
+				<db:bulk-insert doc:name="Bulk insert" doc:id="8fc102d9-ba77-4960-b85b-76962c952d95" config-ref="SAM_Database_Config">
+				<db:sql>insert into SAM20.SAM.Edificios(ID,NOMBRE,CALLE,NUMERO,DESCRIPCION,LATITUD,LONGITUD,DELEGACION) values(:ID, :NOMBRE, :CALLE, :NUMERO, :DESCRIPCION, :LATITUD, :LONGITUD, :DELEGACION)</db:sql>
+			</db:bulk-insert>
+				<logger level="INFO" doc:name="Records Inserted" doc:id="7d7b70b5-7cb4-49c9-9cf5-895c9b9d95bd" message='#["[EDIFICIO] Total Rows inserted successfully : " ++ sizeOf(payload) ++ ", ID of rows : " ++  vars.tableID]' />
+				<set-variable value="#[sizeOf(payload) + vars.insertRowCount]" doc:name="Set insertRowCount" doc:id="5aae267e-2e17-411c-8c60-3ae1d8c439fc" variableName="insertRowCount" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="82ee7743-424d-4669-ada0-9aa945d264b7" type="ANY">
+						<set-variable value="#[error.detailedDescription]" doc:name="Set errorMsg" doc:id="fdadf65a-1e16-418a-92bd-7f6206f2bb30" variableName="errorMsg"/>
+						<set-variable value="Failed" doc:name="Set Status" doc:id="3cc88dbb-2e79-4e11-a84d-83e6da64e3ce" variableName="status"/>
+						<logger level="INFO" doc:name="Failed Rows" doc:id="1e448af9-7e69-47e4-a30d-d4f449dedb3d" message='#["EDIFICIO FAILED rows : " ++ vars.tableID]'/>
+						<logger level="INFO" doc:name="Error logs" doc:id="0a119317-b6c3-46ed-9d80-a16979b96603" message='#["EDIFICIO FAILED ROWS REASON : " ++ error.detailedDescription]'/>
+						<set-variable value="#[sizeOf(payload) + vars.failedRowCount]" doc:name="Set failedRowCount" doc:id="8271b1b0-6876-4e50-813e-d334899da221" variableName="failedRowCount"/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<logger level="INFO" doc:name="Success Failed Count" doc:id="aa243f78-899d-43ef-baf4-39a28f85453a" message='#["EDIFICIO FAILED COUNTS :: " ++ vars.failedRowCount ++ " , EDIFICIO SUCCESS COUNTS : " ++ vars.insertRowCount]'/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6f93e49b-b992-45ff-9095-a78815067677" >
+				<set-variable value="#[error.detailedDescription]" doc:name="Set errorMsg" doc:id="8244bfd8-1ab3-434d-8766-618b650e6680" variableName="errorMsg" />
+				<logger level="INFO" doc:name="Error Logs" doc:id="93a5619a-cfe3-4f35-b046-e0606c4f335f" message='#["EDIFICIO Error in edificio-data-move-flow : " ++ vars.errorMsg]' />
+				<set-variable value="Failed" doc:name="Set Status" doc:id="989e4214-b02c-4be6-9e71-e4ef95e6e72c" variableName="status" />
+				<ee:transform doc:name="Email Audit Payload" doc:id="5eed6eb5-8973-43be-8cff-7fa13a8bca8b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('edificio.current.project.id') ,
+   "interface_type": p('current.project.type'),
+    "requester_ip": vars.ip,
+   "status": {
+         "code": vars.status,
+         "message":vars.errorMsg default "ERROR",
+    },
+    "data": '{
+          "service": " updateEdificios",
+          "SAMResponse": "Records not Inserted",
+          "status": ' ++ vars.status ++ ',
+          "Error" : ' ++ vars.errorMsg ++ '
+         }'
+
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="c3ff5cd3-5107-4795-9afa-a45596e97929" name="send-email-audit-Flow" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="count-flow" doc:id="e6cbb3ce-aaab-4fd1-8def-64e26fd87803">
+		<db:select doc:name="Get Count" doc:id="e59af437-471e-4c29-8c22-29c473d25ac0" config-ref="SAM_Database_Config">
+			<db:sql>select ID from SAM20.SAM.Edificios</db:sql>
+		</db:select>
+		<choice doc:name="Check Table Empty or Not" doc:id="c61724a4-ca30-4f40-ae20-7ff3a05aa07f">
+			<when expression="#[sizeOf(payload) &gt;  0]">
+				<db:delete doc:id="9695263c-afdd-49d0-b674-c674c646a498" doc:name="Delete Records" config-ref="SAM_Database_Config">
+					<db:sql>delete from SAM20.SAM.Edificios</db:sql>
+				</db:delete>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="96d29db9-312c-4ccf-a234-244e66fca25b" message="##### EDIFICIO No data in Edificios table ####" />
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e27fa111-23ab-4a26-91ff-5a12a6783a63" >
+				<set-variable value="#[error.detailedDescription]" doc:name="Set Error Message" doc:id="7eaf5cb8-80d5-48ce-8799-f23a2651c879" variableName="errorMsg"/>
+				<set-variable value="Failed" doc:name="Set Status" doc:id="382afcee-2a87-4d6f-b45d-1105121cac77" variableName="status"/>
+				<logger level="INFO" doc:name="Error Logs" doc:id="4464b415-501c-49a3-926a-a9ee2fedfbfa" message='#["EDIFICIO Error in get-count-flow ::: " ++ vars.errorMsg]'/>
+				<ee:transform doc:name="Email Audit Payload" doc:id="78c59419-7ebb-4b35-b8c2-4bd32e1a2f35" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('edificio.current.project.id') ,
+   "interface_type": p('current.project.type'),
+    "requester_ip": vars.ip,
+   "status": {
+         "code": vars.status,
+         "message":vars.errorMsg default "ERROR",
+    },
+    "data": '{
+          "service": " updateEdificios",
+          "SAMResponse": "Records not Inserted",
+          "status": ' ++ vars.status ++ ',
+          "Error" : ' ++ vars.errorMsg ++ '
+         }'
+
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="788ee131-c085-4f7a-942f-dcf6d237311d" name="send-email-audit-Flow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="08a2b85d-dd14-4cfa-9f2e-97a94b5c7352" >
+		<file:connection workingDir="D:\workspace-zenni\batch-processing-example" />
+	</file:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="5ad267cd-e290-4ccf-b6c1-931d1b65ddcd" >
+		<salesforce:basic-connection username="rahul@ps.sandbox" password="Salesforce@$00211" securityToken="DM6rcK5K3BHksrEdsEudrS3dA" url="https://login.salesforce.com/services/Soap/u/55.0" />
+	</salesforce:sfdc-config>
+	<flow name="inserting-records-one-by-one-exampleFlow" doc:id="46d0020e-471f-4327-b9d0-98c4e63735d7" >
+	<file:listener doc:name="On New or Updated File" doc:id="3df3adaa-a0db-4c07-9d35-b5bd99d480cf" config-ref="File_Config" directory="src/main/resources/input" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="20000" startDelay="10"/>
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="d3750b6b-d6a0-456f-8947-c3fc431257f6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="create-single-processing-exampleBatch_Job" doc:id="101d4af1-d751-4057-82c7-5c3723d43c8f" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="d5ed2909-144b-4437-9c19-795df5cac964" >
+					<ee:transform doc:name="Transform Message" doc:id="7ca4115c-0126-44b3-9643-aa6f4203b450" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	Email: payload.Email,
+	FirstName: payload.FirstName,
+	LastName: payload.LastName,
+	Phone: payload.Phone
+}]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<salesforce:create doc:name="Create" doc:id="9479886c-8512-4604-aace-930a6859b097" config-ref="Salesforce_Config" type="Contact" />
+					<ee:transform doc:name="Transform Message" doc:id="70f73778-a57d-4915-8bc5-923a711fd7ae" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="53fc0847-7673-4306-b499-fed5901cb7d7" message="#[payload]"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="7215e70e-9da4-48b9-aa97-363e94e932bd" message="==========Job Completed======"/>
+			</batch:on-complete>
+		</batch:job>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="4872eea6-c7c3-451b-a73c-8e69e8e60b94" >
+				<logger level="INFO" doc:name="Logger" doc:id="fbeb9295-ba6c-455d-bc22-285235772472" message="#[error]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	
+	<flow name="inserting-records-in-batch-exampleFlow" doc:id="045ce776-11f7-4fb7-b4f2-c7e7177bc319" >
+		<file:listener doc:name="On New or Updated File" doc:id="6777935f-5b93-4129-b5c2-ce23abc557b7" config-ref="File_Config" directory="src/main/resources/input" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="20000" startDelay="10"/>
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="3b132597-c600-4c54-a65d-db4b7cd59ee4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batch-processing-exampleBatch_Job" doc:id="d80585cb-09d4-4b46-b2e5-e9e39157dd6a" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="101d29cd-1a87-48e5-8622-38c0267451f3" >
+					<ee:transform doc:name="Transform Message" doc:id="226d5d95-b328-4786-811d-d386e1e0e8e4" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	Email: payload.Email,
+	FirstName: payload.FirstName,
+	LastName: payload.LastName,
+	Phone: payload.Phone
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="4fcc0f84-ac98-4993-923d-7fc069293439" size="5">
+						<salesforce:create doc:name="Create" doc:id="79c3ea77-eb2a-4c4c-95a2-dc8ca0322382" config-ref="Salesforce_Config" type="Contact" />
+						<ee:transform doc:name="Transform Message" doc:id="cb519b5d-1ed3-45da-83c1-8b6a847c0c66">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="c769e72b-2d40-4b72-a308-848a44139912" message="#[payload]" />
+					</batch:aggregator>
+				
+</batch:step>
+			
+</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="cf8e89c7-c6a1-4cdd-8998-63a81519ba9b" message="==========Job Completed======"/>
+			</batch:on-complete>
+		</batch:job>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5112d512-a19a-421e-aecc-587ff79b3ef0" >
+				<logger level="INFO" doc:name="Logger" doc:id="51599765-dd52-48bb-9053-103175be8634" message="#[error]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

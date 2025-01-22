@@ -1,0 +1,16 @@
+package com.atc.ebs.vendor;
+
+import javax.jws.WebParam;
+import javax.jws.WebResult;
+import javax.jws.WebService;
+import javax.xml.bind.annotation.XmlElement;
+
+import com.atc.model.tarantula.GetVendorDataServiceResponse;
+
+@WebService
+public interface GetVendorData {
+	public @WebResult(name="response")GetVendorDataServiceResponse getVendorData(
+			@WebParam(name="countryCode") @XmlElement(required=true,nillable=false) String countryCode, 
+			@WebParam(name="maxRecord") @XmlElement(required=true,nillable=false) String maxRecord
+			) throws Exception;
+}

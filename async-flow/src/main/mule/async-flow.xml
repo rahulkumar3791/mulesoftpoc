@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="18887a94-f56e-480a-bbfa-975faeeb9d4a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="ceca2a5a-61a1-4026-954c-043dc883d7d5" >
+		<http:request-connection host="localhost" port="8082" />
+	</http:request-config>
+	<flow name="async-flowFlow" doc:id="129f5bf0-6ac8-429e-9d20-07f120497e9e" >
+		<http:listener doc:name="Listener" doc:id="2ee3aae5-bc86-42d7-b92e-7efc3254bd89" config-ref="HTTP_Listener_config" path="/async"/>
+		<set-payload value='#["Processing started"]' doc:name="Set Payload" doc:id="e9efb688-68a8-4f66-be34-c3f70fe6daea" />
+		<async doc:name="Async" doc:id="5ff2c0cc-a610-4c41-a958-a605e968dce9" >
+			<http:request method="GET" doc:name="Request" doc:id="6e26a6c1-256e-49de-b076-dee9d7771b23" path="/asyncService" config-ref="HTTP_Request_configuration"/>
+		</async>
+		<logger level="INFO" doc:name="Logger" doc:id="1e30bab8-8b90-43c2-ad8c-2e8e7b276760" message="Main flow continues"/>
+	</flow>
+</mule>

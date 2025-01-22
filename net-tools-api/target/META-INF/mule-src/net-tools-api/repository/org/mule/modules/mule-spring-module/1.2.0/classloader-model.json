@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "artifactCoordinates": {
+    "groupId": "org.mule.modules",
+    "artifactId": "mule-spring-module",
+    "version": "1.2.0",
+    "type": "jar",
+    "classifier": "mule-plugin"
+  },
+  "dependencies": [
+    {
+      "artifactCoordinates": {
+        "groupId": "javax.inject",
+        "artifactId": "javax.inject",
+        "version": "1",
+        "type": "jar"
+      },
+      "uri": "repository/javax/inject/javax.inject/1/javax.inject-1.jar"
+    }
+  ]
+}

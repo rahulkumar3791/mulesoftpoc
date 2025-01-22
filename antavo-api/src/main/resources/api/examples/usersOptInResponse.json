@@ -1,0 +1,13 @@
+{
+    "id": "test",
+    "created_at": 1614368407,
+    "email": "rajaram@zenni.com",
+    "first_name": "Rajaram",
+    "last_name": "Pasupathy",
+    "status": "active",
+    "score": 0,
+    "spent": 0,
+    "pending": 0,
+    "image_url": null,
+    "events": []
+}

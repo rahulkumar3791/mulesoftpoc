@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<wsdl:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://land.lease.ebs.atc.com/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns1="http://schemas.xmlsoap.org/soap/http" name="GetLandLeaseDataService" targetNamespace="http://land.lease.ebs.atc.com/">
+    <wsdl:types>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://land.lease.ebs.atc.com/" attributeFormDefault="unqualified" elementFormDefault="unqualified" targetNamespace="http://land.lease.ebs.atc.com/">
+            <xs:element name="getLandLeaseData" type="tns:getLandLeaseData"/>
+            <xs:element name="getLandLeaseDataResponse" type="tns:getLandLeaseDataResponse"/>
+            <xs:complexType name="getLandLeaseData">
+                <xs:sequence>
+                    <xs:element name="siteId" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="getLandLeaseDataResponse">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="response" type="tns:getLandLeaseDataServiceResponse"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="getLandLeaseDataServiceResponse">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="header" type="tns:header"/>
+                    <xs:element minOccurs="0" name="landLeaseDetails" type="tns:landLeaseDetails"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="header">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="statusCode" type="xs:string"/>
+                    <xs:element minOccurs="0" name="statusDescription" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="landLeaseDetails">
+                <xs:sequence>
+                    <xs:element maxOccurs="unbounded" minOccurs="0" name="landLeaseData" nillable="true" type="tns:landLeaseData"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="landLeaseData">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="globalSiteId" type="xs:string"/>
+                    <xs:element name="rentAmount" type="xs:double"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Exception" type="tns:Exception"/>
+            <xs:complexType name="Exception">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="message" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name="getLandLeaseDataResponse">
+        <wsdl:part element="tns:getLandLeaseDataResponse" name="parameters">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getLandLeaseData">
+        <wsdl:part element="tns:getLandLeaseData" name="parameters">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="Exception">
+        <wsdl:part element="tns:Exception" name="Exception">
+    </wsdl:part>
+    </wsdl:message>
+    <wsdl:portType name="GetLandLeaseData">
+        <wsdl:operation name="getLandLeaseData">
+            <wsdl:input message="tns:getLandLeaseData" name="getLandLeaseData">
+    </wsdl:input>
+            <wsdl:output message="tns:getLandLeaseDataResponse" name="getLandLeaseDataResponse">
+    </wsdl:output>
+            <wsdl:fault message="tns:Exception" name="Exception">
+    </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="GetLandLeaseDataServiceSoapBinding" type="tns:GetLandLeaseData">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="getLandLeaseData">
+            <soap:operation soapAction="" style="document"/>
+            <wsdl:input name="getLandLeaseData">
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="getLandLeaseDataResponse">
+                <soap:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="Exception">
+                <soap:fault name="Exception" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="GetLandLeaseDataService">
+        <wsdl:port binding="tns:GetLandLeaseDataServiceSoapBinding" name="GetLandLeaseDataPort">
+            <soap:address location="https://localhost:8081/api/soap/getLandLeaseData"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

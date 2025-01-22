@@ -1,0 +1,19 @@
+#%RAML 1.0 DataType
+
+type: object
+properties:
+  id:
+    type: string
+    example: "5fbe6274b37dba5348000022"
+  name:
+    type: !include name-type.raml 
+  description:
+    type: !include description-type.raml
+  category:
+    type: string
+    example: ""
+  price: 
+    type: !include price-type.raml
+  image_url:
+    type: string
+    example: "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1610744526-NIz9m.webp"

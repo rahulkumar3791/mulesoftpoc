@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8e539638-d2c5-4ca1-9c14-329997106657" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-salesforceFlow" doc:id="abb373bc-f2fd-441f-b73e-9b3428d69643" >
+		<http:listener doc:name="Listener" doc:id="4971ac62-3594-4e9b-967e-92ad864e9c86" config-ref="HTTP_Listener_config" path="/api/rest/salesforce"/>
+		<salesforce:create type="" doc:name="Create" doc:id="c980ce2e-f8a2-42a1-86f3-1081edeb76e7" />
+	</flow>
+</mule>

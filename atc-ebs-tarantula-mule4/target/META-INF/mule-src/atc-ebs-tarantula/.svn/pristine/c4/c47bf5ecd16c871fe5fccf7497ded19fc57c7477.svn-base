@@ -1,0 +1,21 @@
+#Environment and User Specific Configuration
+mule-env=development
+
+#Fixed Properties
+mule-deployment-type=cloudhub
+mule-business-group=
+mule-redeploy=true
+mule-workers=1
+mule-workers-type=MICRO
+mule-region=us-east-1
+mule-redeploy=true
+mule-overwrite=true
+
+#Mule Deploy Plugin Properties
+client-id=8741e0009a3d4385a9207d004184b086
+client-secret=6ffebd801f8543f9A514ECFE6AE89FCC
+mule-cloudhub-url=https://anypoint.mulesoft.com
+mule-analytics-base-uri=https://analytics-ingest.anypoint.mulesoft.com
+mule-coreservice-base-uri=https://anypoint.mulesoft.com/accounts
+mule-platform-base-uri=https://anypoint.mulesoft.com/apiplatform
+mule-contracts-base-uri=https://anypoint.mulesoft.com/apigateway/ccs

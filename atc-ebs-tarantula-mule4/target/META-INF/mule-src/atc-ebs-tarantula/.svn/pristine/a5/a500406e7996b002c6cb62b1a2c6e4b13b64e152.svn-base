@@ -1,0 +1,105 @@
+package com.atc.model.tarantula;
+
+public class RequisitionMoveOrder {
+	
+	private String ItemCode;
+	private String NeedbyDate;
+	private String GlobalSiteID;
+	private String CustomerName;
+	private String SupplierName;
+	private double Quantity;
+	private double UnitPrice;
+	private String UOMCode;
+	private String ServicePurpose;
+	private String ServiceDesc;
+	private String Requestor;
+	private String RequestDate;
+	private int BoqLineID;
+	private String BoqID;
+	
+	public String getItemCode() {
+		return ItemCode;
+	}
+	public void setItemCode(String itemCode) {
+		ItemCode = itemCode;
+	}
+	public String getNeedbyDate() {
+		return NeedbyDate;
+	}
+	public void setNeedbyDate(String needbyDate) {
+		NeedbyDate = needbyDate;
+	}
+	public String getGlobalSiteID() {
+		return GlobalSiteID;
+	}
+	public void setGlobalSiteID(String globalSiteID) {
+		GlobalSiteID = globalSiteID;
+	}
+	public String getCustomerName() {
+		return CustomerName;
+	}
+	public void setCustomerName(String customerName) {
+		CustomerName = customerName;
+	}
+	public String getSupplierName() {
+		return SupplierName;
+	}
+	public void setSupplierName(String supplierName) {
+		SupplierName = supplierName;
+	}
+	public double getQuantity() {
+		return Quantity;
+	}
+	public void setQuantity(double quantity) {
+		Quantity = quantity;
+	}
+	public double getUnitPrice() {
+		return UnitPrice;
+	}
+	public void setUnitPrice(double unitPrice) {
+		UnitPrice = unitPrice;
+	}
+	public String getUOMCode() {
+		return UOMCode;
+	}
+	public void setUOMCode(String uOMCode) {
+		UOMCode = uOMCode;
+	}
+	public String getServicePurpose() {
+		return ServicePurpose;
+	}
+	public void setServicePurpose(String servicePurpose) {
+		ServicePurpose = servicePurpose;
+	}
+	public String getServiceDesc() {
+		return ServiceDesc;
+	}
+	public void setServiceDesc(String serviceDesc) {
+		ServiceDesc = serviceDesc;
+	}
+	public String getRequestor() {
+		return Requestor;
+	}
+	public void setRequestor(String requestor) {
+		Requestor = requestor;
+	}
+	public String getRequestDate() {
+		return RequestDate;
+	}
+	public void setRequestDate(String requestDate) {
+		RequestDate = requestDate;
+	}
+	public int getBoqLineID() {
+		return BoqLineID;
+	}
+	public void setBoqLineID(int boqLineID) {
+		BoqLineID = boqLineID;
+	}
+	public String getBoqID() {
+		return BoqID;
+	}
+	public void setBoqID(String boqID) {
+		BoqID = boqID;
+	}
+	
+}

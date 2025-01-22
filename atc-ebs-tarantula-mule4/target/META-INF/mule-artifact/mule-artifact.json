@@ -1,0 +1,86 @@
+{
+  "configs": [
+    "com/atc/tarantula/common-flow-business-logic.xml",
+    "com/atc/tarantula/ebs-getTenantLeaseData.xml",
+    "com/atc/tarantula/project-site-creation-tarantula-to-oracle-siteid.xml",
+    "email-audit-interface.xml",
+    "com/atc/tarantula/ebs-getLandLeaseData.xml",
+    "com/atc/tarantula/project-site-creation-tarantula-to-oracle.xml",
+    "com/atc/tarantula/purchase-requistion-ttid.xml",
+    "com/atc/tarantula/tarantula-getRequisition-and-move-order.xml",
+    "com/atc/tarantula/purchase-requistion.xml",
+    "com/atc/tarantula/ebs-getLandLeaseRentData.xml",
+    "com/atc/tarantula/project-status-tt-to-oracle.xml",
+    "com/atc/tarantula/tarantula-inboundService.xml",
+    "email-audit-service.xml",
+    "config.xml",
+    "endpoints.xml",
+    "healthcheck.xml",
+    "com/atc/tarantula/vendor.xml",
+    "com/atc/tarantula/project-status-tt-to-oracle-ttid.xml",
+    "com/atc/tarantula/purchase-requistion-retry.xml"
+  ],
+  "secureProperties": [
+    "tls.key.password",
+    "tls.store.password",
+    "https.password",
+    "email.audit.db.password",
+    "tarantula.db.password",
+    "sql.server.password"
+  ],
+  "redeploymentEnabled": true,
+  "name": "atc-ebs-tarantula",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "api/getLandLeaseData.wsdl",
+        "api/getLandLeaseRentData.wsdl",
+        "api/getRequisitionAndMoveOrder.wsdl",
+        "api/getTenantLeaseData.wsdl",
+        "api/setOrders.wsdl",
+        "api/tarantulaService.wsdl",
+        "application-types.xml",
+        "beans.xml",
+        "com/atc/tarantula/common-flow-business-logic.xml",
+        "com/atc/tarantula/ebs-getLandLeaseData.xml",
+        "com/atc/tarantula/ebs-getLandLeaseRentData.xml",
+        "com/atc/tarantula/ebs-getTenantLeaseData.xml",
+        "com/atc/tarantula/project-site-creation-tarantula-to-oracle-siteid.xml",
+        "com/atc/tarantula/project-site-creation-tarantula-to-oracle.xml",
+        "com/atc/tarantula/project-status-tt-to-oracle-ttid.xml",
+        "com/atc/tarantula/project-status-tt-to-oracle.xml",
+        "com/atc/tarantula/purchase-requistion-retry.xml",
+        "com/atc/tarantula/purchase-requistion-ttid.xml",
+        "com/atc/tarantula/purchase-requistion.xml",
+        "com/atc/tarantula/tarantula-getRequisition-and-move-order.xml",
+        "com/atc/tarantula/tarantula-inboundService.xml",
+        "com/atc/tarantula/vendor.xml",
+        "config.xml",
+        "email-audit-interface.xml",
+        "email-audit-service.xml",
+        "endpoints.xml",
+        "healthcheck.xml",
+        "keystore",
+        "log4j2.xml",
+        "modules/escapeChar.dwl",
+        "resources-dev.properties",
+        "resources-prod.properties",
+        "resources-qc.properties",
+        "resources-uat.properties",
+        "success-failed-error-email.html"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {
+      "exportedResources": [
+        "src/main/resources/beans.xml"
+      ]
+    }
+  }
+}

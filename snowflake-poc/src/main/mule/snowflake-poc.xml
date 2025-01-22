@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:snowflake="http://www.mulesoft.org/schema/mule/snowflake"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/snowflake http://www.mulesoft.org/schema/mule/snowflake/current/mule-snowflake.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<snowflake:snowflake-config name="Snowflake_Config" doc:name="Snowflake Config" doc:id="6e88ff91-0eb8-48b9-9a50-ae34dcc4317b" >
+		<snowflake:snowflake-connection accountName="GOA98855" user="rahulkumar3791" password="Snowflake@1991234" warehouse="COMPUTE_WH" database="employee" schema="employee"/>
+	</snowflake:snowflake-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="13f64f28-b8fd-4ccc-87f0-37678ef9dcbb" >
+		<http:listener-connection host="0.0.0.0" port="8088" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="cfb8668a-0b71-4238-8fa6-6aab9de761cb" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="testdb"/>
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="ff5f1219-af6c-41a9-973c-29e03295a22b" defaultErrorHandler-ref="snowflake-pocError_Handler" />
+	<flow name="snowflake-pocFlow" doc:id="1be22a0f-18f2-43f6-8dbc-f93d01eb69d5" >
+		<http:listener doc:name="Listener" doc:id="dc384b94-e0f7-4fef-aad5-84262648063e" config-ref="HTTP_Listener_config" path="/api/rest/snowflake"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f70e0a17-735e-4aae-b5e9-f064dab2d5a4" message="######snow flake integration with mule##########"/>
+		<snowflake:select doc:name="Select" doc:id="db64ad09-68eb-436f-9088-0a6d94594359" config-ref="Snowflake_Config">
+			<snowflake:sql >select * from emp_tbl</snowflake:sql>
+		</snowflake:select>
+		<logger level="INFO" doc:name="Logger" doc:id="af91124e-a8da-4219-b553-6526c0b2597f" message="####### Connection established #########" />
+		<ee:transform doc:name="Transform Message" doc:id="87d4cc0e-04cd-42b6-ad45-7da881736511">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set snowflakeResponse" doc:id="6a528ae3-4c52-4dcb-90b2-6e6e49ff9222" variableName="snowflakeResponse"/>
+		<logger level="INFO" doc:name="Log snowflakeResponse" doc:id="d59f87bc-9d73-4dda-84a5-43ca4e3f4902" message="snowflakeResponse"/>
+		<flow-ref doc:name="external-db-fetchdata-flow Reference" doc:id="429c7c94-8f99-44da-b7e4-9b889d564a27" name="external-db-fetchdata-flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="490c1aa9-65c1-4e82-bc9d-a39e541407e7" message="########## flow end #########"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="63935062-3330-480a-8d40-8343055f7ec9" >
+				<ee:transform doc:name="Transform Message" doc:id="84ec7c16-8afb-4f5c-b6bc-38db25934b1f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"error" : error.detailedDescription,
+	"flow" : "snowflake connection"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="external-db-fetchdata-flow" doc:id="c3952467-c9c2-4dc9-9f70-58c88d2b2b8b" >
+		<logger level="INFO" doc:name="Logger" doc:id="2ff962e0-9f6c-4832-ad00-e639d4def277" message="############# External DB flow started ########"/>
+		<db:select doc:name="fetchData" doc:id="448316bf-e7af-4026-9866-6495bf5abe32" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from tblemployee]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="7ecdcf28-634a-4d6f-a9d9-a184fb28acfc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="10d6a36d-97f9-4bad-80de-799dd17017da" message="#[payload]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f16a8e80-14ba-42bb-b23a-c5980506b583" message="####### Fetch data from Mysql db flow completed #######"/>
+		<flow-ref doc:name="insert-data-snowFlake_DB_Flow Reference" doc:id="4fef2918-0722-4753-8ee3-7ff8590e5d1c" name="insert-data-snowFlake_DB_Flow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="3a461783-a6e3-45ac-b994-4b791d48a977" >
+				<ee:transform doc:name="Transform Message" doc:id="25f7fe1f-40e2-4473-aa1a-f2a75d5dbe1e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"error": error.detailedDescription,
+	"flow" : "mysql connection"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<sub-flow name="insert-data-snowFlake_DB_Flow" doc:id="ded61bb9-7d01-4bd1-82b0-d8cece59e5ca" >
+		<logger level="INFO" doc:name="Logger" doc:id="9ebd9b15-1e8e-4a86-a5fd-a21407e0f848" message="######### Insert data into snowflake db flow is started  ########"/>
+		<foreach doc:name="For Each" doc:id="60d26a6f-a6e6-40a7-ac28-85c4b8380bc1" collection="#[payload]">
+			<try doc:name="Try" doc:id="57370b6c-d0f5-46d5-a091-e227b1f0125a">
+			<snowflake:insert doc:name="Insert" doc:id="17ddf66f-a2c6-467e-b2fb-830afedabb24" config-ref="Snowflake_Config">
+			<snowflake:sql><![CDATA[insert into emp_tbl(ADDRESS,NAME,ID,EMAIL) values (:ADDRESS,:NAME,:ID,:EMAIL)]]></snowflake:sql>
+					<snowflake:input-parameters ><![CDATA[#[{
+	"ADDRESS"  : payload.Employee_Address,
+	"NAME" : payload.Employee_first_name ++ " " ++ (payload.Employee_last_name default ""),
+	"ID" : payload.Employee_id,
+	"EMAIL" : payload.Employee_emailID
+	
+}]]]></snowflake:input-parameters>
+		</snowflake:insert>
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2a179b38-b7b0-4c59-8a2b-bed3a3c86cd9">
+					<logger level="INFO" doc:name="Logger" doc:id="75a487f2-3a8c-4edb-845a-6f1debcfa393" message="#[error.detailedDescription]" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="3741774c-95bd-436f-842d-3c106f065315" message="######### Insertion successfully ########"/>
+	</sub-flow>
+	<error-handler name="snowflake-pocError_Handler" doc:id="e1465101-5bd3-4e29-93f9-54d913b5dbfa" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7891860a-ec81-4ece-8f36-73cf818c2e33" >
+			<ee:transform doc:name="Transform Message" doc:id="7887b337-04f6-42b2-9d81-caaccddcb5ad" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"error" : error.detailedDescription]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>
+            

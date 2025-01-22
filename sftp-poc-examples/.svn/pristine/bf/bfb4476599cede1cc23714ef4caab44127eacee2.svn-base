@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="7648df38-42e2-437f-bcba-0541dee0b8c4" >
+		<wsc:connection wsdlLocation="${ws.url}" service="${ws.service}" port="${ws.port}" address="${ws.address}">
+			<reconnection >
+				<reconnect-forever />
+			</reconnection>
+			<wsc:custom-transport-configuration >
+				<wsc:default-http-transport-configuration timeout="#[p('ws.response.timeout')]" />
+			</wsc:custom-transport-configuration>
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" >
+				<wsc:username-token-security-strategy username="${ws.user}" password="${ws.password}" />
+			</wsc:web-service-security>
+		</wsc:connection>
+	</wsc:config>
+	<flow name="serengeti-paymentFlow" doc:id="f1971bb4-57b4-49b2-a94a-ce692fb4df66" >
+		<ee:transform doc:name="Transform Message" doc:id="1132ddcc-b226-43ee-b8ae-146dbbc78423" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="ip" ><![CDATA[server.ip as String default "0.0.0.0"]]></ee:set-variable>
+				<ee:set-variable variableName="successList" ><![CDATA[[]]]></ee:set-variable>
+				<ee:set-variable variableName="flowName" ><![CDATA['Payment']]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<sftp:list doc:name="List" doc:id="9d097fed-d812-4544-ad79-1b677d2d4027" config-ref="SFTP_ATC_ORACLE_Config" directoryPath="#[p('atc.oracle.sftp.server.outboundPath')]">
+			<sftp:matcher filenamePattern="#[p('atc.oracle.sftp.server.fileNameFilter')]"/>
+		</sftp:list>
+		<choice doc:name="Choice" doc:id="c5cf520a-e25f-4b15-9c9f-165c129fa7a3" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<flow-ref doc:name="payment-wsdl-flow" doc:id="6e300306-426f-4df9-9acf-4d6ba6acd797" name="payment-wsdl-flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="5016bcb3-5a26-4892-864e-27e8877e5c74" message="### No files exist at path ### ++ #[p('atc.oracle.sftp.server.outboundPath')]"/>
+			</otherwise>
+		</choice>
+				<choice doc:name="Choice" doc:id="3b8bec09-9571-4867-8432-a2f2232e6894" >
+			<when expression="#[p('success.mail.enable') and (sizeOf(vars.successList) &gt; 0 )]">
+				<set-variable value="#['SUCCESS']" doc:name="Set status" doc:id="35e76fee-7f2a-4ea4-af1d-31fd1fbce3b2" variableName="status"/>
+				<flow-ref doc:name="email-audit-notificationFlow" doc:id="75e3328c-e587-4fcc-adf9-b2f4769d889c" name="email-audit-notificationFlow"/>
+			
+</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="f5d1ab56-faca-4f62-923f-1dcc304f8a92" message="## No such records are found which have been processed ###"/>
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="94b0699c-ed87-4116-b5eb-4b2d415e26b9" type="ANY">
+				<flow-ref doc:name="exceptio-strategy-flow" doc:id="ee5d0e84-e921-448c-99e9-a68d545d7bfb" name="exceptio-strategy-flow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="payment-wsdl-flow" doc:id="753a2f79-f421-4120-987c-699478acb24d" >
+		<try doc:name="Try" doc:id="6a563298-50ed-44a0-ab77-dbaa4e9b7f2a" >
+			<foreach doc:name="For Each" doc:id="ab8d35d9-6c48-463b-9899-bc60cf47b5ba" collection="payload.*typedAttributes.path">
+				<set-variable value="#[payload]" doc:name="Set filePathName" doc:id="dd1054a7-e7b9-4ada-86a0-6a242d9ec35e" variableName="filePathName" />
+				<logger level="INFO" doc:name="Logger" doc:id="8bee2ef9-32e2-4e0e-a95a-2adbec131b22" message="#['file name is : ' ++ payload]"/>
+				<sftp:read doc:name="Read" doc:id="f49575d3-6186-4069-9199-b552ceb3da0b" config-ref="SFTP_ATC_ORACLE_Config" path="#[payload]" outputMimeType="application/octet-stream"/>
+				<set-variable value="#[payload]" doc:name="Set filePayload" doc:id="f05064ba-0318-45fd-8127-d3f086890b38" variableName="filePayload"/>
+				<set-variable value="#[attributes.fileName]" doc:name="Set fileName" doc:id="4473e986-7267-4cf6-83e2-7c9a9fb8a032" variableName="fileName"/>
+				<flow-ref doc:name="callwebservice" doc:id="f59eeabb-fe58-4595-87cd-e5ba0efd37d1" name="web-service-business-flow"/>
+			</foreach>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1723298b-eaba-4a44-a271-78bdb3c392e8" type="ANY">
+					<flow-ref doc:name="exceptio-strategy-flow" doc:id="4dca0d1c-1ecc-469e-b650-f18ed3c9ac71" name="exceptio-strategy-flow"/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</flow>
+	<flow name="web-service-business-flow" doc:id="44b961eb-a059-4321-8fb8-981e7f3e0aa5" >
+		<ee:transform doc:name="Transform Message" doc:id="e81a0c9f-7420-4bd3-8ab4-207073d34666" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	dateFormat : p('ws.formatdate') ,
+	data : payload as String,
+	fileDelimiter : p('ws.fileDelimiter')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="d2199dbc-b324-428d-bc24-b8857421b575">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+
+ns xmlnscon https://www.serengetilaw.com/contract
+ns xmlnstype https://www.serengetilaw.com/types  
+
+---
+{
+	xmlnscon#UploadPaymentsFromFile:
+	xmlnscon#fileData : 
+		  	{ 
+		  		xmlnstype#DateFormat : payload.dateFormat,		
+		  		xmlnstype#FileData: payload.data,	
+				xmlnstype#FileDelimiter: payload.fileDelimiter	   					
+			}	
+}
+
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="ab1d7160-1499-4bb4-920d-d777200fc096" message="Requesting payload is : ++ #[payload]"/>
+		<wsc:consume doc:id="6d66c3a0-a824-4647-b6f2-4fc95b4d4df9" doc:name="" config-ref="Web_Service_Consumer_Config" operation="UploadPaymentsFromFile"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7992f70f-4035-4b24-affe-3574cee19fff" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="6f54a6ea-f1cf-4e09-988d-aedd2c8330e1" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="statusCode" ><![CDATA[attributes..statusCode[0] ]]></ee:set-variable>
+				<ee:set-variable variableName="wscResponse" ><![CDATA[output application/java 
+--- 
+
+(payload.body..UploadPaymentsFromFileResult[0].Errors..ErrorText[0] default payload.body..UploadPaymentsFromFileResult.PaymentResults..ErrorText[0]) default 'Success']]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="108410b3-4e57-4ac3-8412-2d77d17634a4" >
+			<when expression="#[attributes..statusCode[0]  == '200']">
+				<flow-ref doc:name="serengeti-payment-Archive-Flow" doc:id="bc7f433a-9872-4b90-86c2-fde0e70295d0" name="serengeti-payment-Archive-Flow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="a1759b53-05bb-47f7-a8e5-e5e59e2fe447" message="## error in web service ##"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="serengeti-payment-Archive-Flow" doc:id="bff44f30-e52a-4fd5-879b-542d159324e8" >
+		<choice doc:name="Choice" doc:id="ecff13a1-0150-4ae2-b18c-382705d15010" >
+			<when expression="#[p('atc.oracle.sftp.server.archiveEnable')]">
+				<sftp:move doc:name="Move" doc:id="29931681-1a5a-4f80-b446-2cbc4b4655fc" config-ref="SFTP_ATC_ORACLE_Config" targetPath="#[p('atc.oracle.sftp.server.archivePath')]" sourcePath="#[p('atc.oracle.sftp.server.outboundPath') ++ '/' ++ (vars.fileName default '')]" overwrite="true"/>
+				<logger level="INFO" doc:name="Logger" doc:id="f989840e-9183-4f09-9a71-453c717eb67d" message="### File placed succesfully from Oracle R11 archive Path ###"/>
+				<ee:transform doc:name="Transform Message" doc:id="99af4066-07bc-4ed6-aea2-e3c72c44dc6b">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="successList"><![CDATA[%dw 2.0
+output application/java
+---
+vars.successList + ((vars.filePathName default vars.fileName) ++ ' with response ' ++ (vars.wscResponse default 'Success' ) ++ ' with Status Code ' ++ (vars.statusCode default '') )]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="3fc9097f-594e-4f6a-a41c-3bbca3ac6195" message="## No Need to archive the file ###"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="exceptio-strategy-flow" doc:id="2a7c9871-982b-44f3-a409-650c78e59fa7" >
+		<set-variable value="#[error.detailedDescription default 'Error']" doc:name="Set errorMsg" doc:id="23138b54-3266-4a99-958b-81fe39c456f6" variableName="errorMsg"/>
+		<set-variable value="#['Failed']" doc:name="Set status" doc:id="82c00e23-feee-4f50-9616-887ad4d09106" variableName="status"/>
+		<logger level="INFO" doc:name="error-log" doc:id="4ee6b5c8-227a-48ab-ace7-5e14893d2356" message="#['error while sftp for file ' ++ vars.errorMsg default '']"/>
+		<flow-ref doc:name="email-audit-notificationFlow" doc:id="8cee947c-4620-4e8f-aef2-cad6b000882f" name="email-audit-notificationFlow"/>
+	</flow>
+</mule>

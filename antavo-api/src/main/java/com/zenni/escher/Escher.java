@@ -1,0 +1,198 @@
+package com.zenni.escher;
+
+
+import org.apache.http.client.utils.URIBuilder;
+
+import com.zenni.escher.util.DateTime;
+
+import javax.xml.bind.DatatypeConverter;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+public class Escher {
+
+    public static final String UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD";
+    public static final int DEFAULT_EXPIRES = 86400;
+
+    private String credentialScope;
+    private String algoPrefix = "ESR";
+    private String vendorKey = "Escher";
+    private String hashAlgo = "SHA256";
+    private Instant currentTime = Instant.now();
+    private String authHeaderName = "X-Escher-Auth";
+    private String dateHeaderName = "X-Escher-Date";
+    private int clockSkew = 900;
+
+    public Escher(String credentialScope) {
+        this.credentialScope = credentialScope;
+    }
+
+
+    public EscherRequest signRequest(EscherRequest request, String accessKeyId, String secret, List<String> signedHeaders) throws EscherException {
+        Config config = createConfig();
+        /*System.out.println(config.getVendorKey());
+        System.out.println(config.getAuthHeaderName());
+        System.out.println(config.getDateHeaderName());
+        System.out.println(config.getHashAlgo());
+        System.out.println(config.getFullAlgorithm());
+        System.out.println(config.getAlgoPrefix());*/
+        Helper helper = new Helper(config);
+
+        helper.addMandatoryHeaders(request, currentTime);
+        helper.addMandatorySignedHeaders(signedHeaders);
+
+        String signature = calculateSignature(helper, request, secret, signedHeaders, currentTime);
+        String authHeader = helper.calculateAuthHeader(accessKeyId, currentTime, credentialScope, signedHeaders, signature);
+        helper.addAuthHeader(request, authHeader);
+
+        return request;
+    }
+
+
+    public String presignUrl(String url, String accessKeyId, String secret) throws EscherException{
+        return presignUrl(url, accessKeyId, secret, DEFAULT_EXPIRES);
+    }
+
+
+    public String presignUrl(String url, String accessKeyId, String secret, int expires) throws EscherException{
+        try {
+            Config config = createConfig();
+            Helper helper = new Helper(config);
+
+            URI uri = new URI(url);
+            URIBuilder uriBuilder = new URIBuilder(uri);
+
+            Map<String, String> params = helper.calculateSigningParams(accessKeyId, currentTime, credentialScope, expires);
+            params.forEach((key, value) -> uriBuilder.addParameter("X-" + vendorKey + "-" + key, value));
+
+            EscherRequest request = new PresignUrlDummyEscherRequest(uriBuilder.build());
+
+            String signature = calculateSignature(helper, request, secret, Arrays.asList("host"), currentTime);
+
+            uriBuilder.addParameter("X-" + vendorKey + "-" + "Signature", signature);
+
+            return uriBuilder.build().toString();
+        } catch (URISyntaxException e) {
+            throw new EscherException(e);
+        }
+    }
+
+
+    public String authenticate(EscherRequest request, Map<String, String> keyDb, InetSocketAddress address) throws EscherException {
+        Config config = createConfig();
+        Helper helper = new Helper(config);
+
+        AuthElements authElements = helper.parseAuthElements(request);
+        Instant requestDate = helper.parseDate(request);
+        String hostHeader = helper.parseHostHeader(request);
+
+        AuthenticationValidator validator = new AuthenticationValidator(config);
+
+        validator.validateMandatorySignedHeaders(authElements.getSignedHeaders(), authElements.isFromHeaders());
+        validator.validateHashAlgo(authElements.getHashAlgo());
+        validator.validateDates(requestDate, DateTime.parseShortString(authElements.getCredentialDate()), currentTime, authElements.getExpires());
+        validator.validateHost(address, hostHeader);
+        validator.validateCredentialScope(credentialScope, authElements.getCredentialScope());
+
+        String secret = retrieveSecret(keyDb, authElements.getAccessKeyId());
+        request = authElements.isFromHeaders() ? request : new PresignUrlEscherRequestWrapper(request);
+        String calculatedSignature = calculateSignature(helper, request, secret, authElements.getSignedHeaders(), requestDate);
+
+        validator.validateSignature(calculatedSignature, authElements.getSignature());
+
+        return authElements.getAccessKeyId();
+    }
+
+
+    private String retrieveSecret(Map<String, String> keyDb, String accessKeyId) throws EscherException {
+        String secret = keyDb.get(accessKeyId);
+
+        if (secret == null) {
+            throw new EscherException("Invalid access key id");
+        }
+        return secret;
+    }
+
+
+    private String calculateSignature(Helper helper, EscherRequest request, String secret, List<String> signedHeaders, Instant date) throws EscherException {
+        String canonicalizedRequest = helper.canonicalize(request, signedHeaders);
+        String stringToSign = helper.calculateStringToSign(date, credentialScope, canonicalizedRequest);
+        byte[] signingKey = helper.calculateSigningKey(secret, date, credentialScope);
+        String signature = helper.calculateSignature(signingKey, stringToSign);
+
+        Logger.log("Canonicalized request: " + canonicalizedRequest);
+        Logger.log("String to sign: " + stringToSign);
+        Logger.log("Signing key: " + DatatypeConverter.printHexBinary(signingKey));
+        Logger.log("Signature: " + signature);
+
+        return signature;
+    }
+
+
+    private Config createConfig() {
+        return Config.create()
+                .setVendorKey(vendorKey)
+                .setAlgoPrefix(algoPrefix)
+                .setHashAlgo(hashAlgo)
+                .setDateHeaderName(dateHeaderName)
+                .setAuthHeaderName(authHeaderName)
+                .setClockSkew(clockSkew);
+    }
+
+
+    public Escher setAlgoPrefix(String algoPrefix) {
+        this.algoPrefix = algoPrefix;
+        return this;
+    }
+
+
+    public Escher setVendorKey(String vendorKey) {
+        this.vendorKey = vendorKey;
+        return this;
+    }
+
+
+    public Escher setHashAlgo(String hashAlgo) {
+        this.hashAlgo = hashAlgo;
+        return this;
+    }
+
+
+    public Escher setCurrentTime(Instant currentTime) {
+        this.currentTime = currentTime;
+        return this;
+    }
+
+
+    public Escher setAuthHeaderName(String authHeaderName) {
+        this.authHeaderName = authHeaderName;
+        return this;
+    }
+
+
+    public Escher setDateHeaderName(String dateHeaderName) {
+        this.dateHeaderName = dateHeaderName;
+        return this;
+    }
+
+
+    public Escher setClockSkew(int clockSkew) {
+        this.clockSkew = clockSkew;
+        return this;
+    }
+
+
+    public Escher setLogger(Consumer<String> logger) {
+        if (logger == null) {
+            throw new IllegalArgumentException("Logger is null");
+        }
+        Logger.setConsumer(logger);
+        return this;
+    }
+}

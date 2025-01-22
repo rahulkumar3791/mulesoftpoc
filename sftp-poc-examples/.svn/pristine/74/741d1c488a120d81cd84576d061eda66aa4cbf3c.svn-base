@@ -1,0 +1,35 @@
+{
+	"configs": [
+		
+		"config.xml",
+		"email-audit-notification.xml",
+		"endpoints.xml",
+		"healthcheck.xml",
+		"com/atc/invoice/serengeti-invoice.xml",
+		"com/atc/payment/serengeti-payment.xml"
+	],
+	"redeploymentEnabled": true,
+	"name": "feeds-serengeti",
+	"requiredProduct": "MULE_EE",
+	"minMuleVersion": "4.2.1",
+	"classLoaderModelLoaderDescriptor": {
+		"id": "mule",
+		"attributes": {
+			"exportedResources": [
+				"beans.xml",
+				"pubring.gpg",
+				"secring.gpg"
+			]
+		}
+	},
+	"secureProperties": [
+		"tls.key.password",
+		"tls.store.password",
+		"https.password",
+		"audit.email.db.password",
+		"atc.oracle.sftp.server.password",
+		"atc.aws.sftp.server.password",
+		"ws.password",
+		"ftp.encryption.fingerprint"
+	]
+}

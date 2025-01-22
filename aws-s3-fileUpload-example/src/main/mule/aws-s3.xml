@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ae65ef92-817d-47d3-acaf-d6611880d11d" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<s3:config name="Amazon_S3_Configuration" doc:name="Amazon S3 Configuration" doc:id="de8fd6b0-d658-4eaa-b4b9-b7df034b8f08" >
+		<s3:connection accessKey="AKIAVG6KAS6FLIWMMBVG" secretKey="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" region="us-west-2"/>
+	</s3:config>
+	<flow name="aws-s3-file-upload-flow" doc:id="94d91e1d-e59a-4501-b052-e599dc094aea" >
+		<http:listener doc:name="Listener" doc:id="7f8c7b7a-94e1-4370-b6c4-69527e0d6f1d" config-ref="HTTP_Listener_config" path="/api/rest/fileUpload" allowedMethods="POST"/>
+		<s3:put-object doc:name="Put Object" doc:id="5d9dcbc6-5996-481e-9815-e0a73660861e" config-ref="Amazon_S3_Configuration" bucketName="s3-mule-test-int" key="welcome.txt" />
+		<ee:transform doc:name="Transform Message" doc:id="06f933ee-e645-492f-a06e-b024c4dd802b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "Upload Successful"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="7e8244f7-7fb2-4d5b-8125-7dba5ed04452" />
+	</flow>
+	<flow name="aws-s3-file-delete-flow" doc:id="52ae7244-c784-4d79-9226-52e2f60e5944">
+		<http:listener doc:name="Listener" doc:id="19d371e8-852c-4574-8c68-2be6d8795cb0" config-ref="HTTP_Listener_config" path="/api/rest/fileDelete" />
+		<s3:delete-object doc:name="Delete Object" doc:id="c2f52002-1aa0-4cf4-ab78-3e08b45b93cc" config-ref="Amazon_S3_Configuration" bucketName="s3-mule-test-int" key="welcome.txt" />
+		<ee:transform doc:name="Transform Message" doc:id="9d6a3a2d-75db-4cb8-839e-6a18c1522e4f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ 
+	 "message" : "Delete Successful"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

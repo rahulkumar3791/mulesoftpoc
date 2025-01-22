@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="dcd31be0-f737-4b2e-b4be-c900652c4667" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="12e00e42-4bf2-4949-b2c9-882234fe1700" >
+		<salesforce:config-with-oauth-connection >
+			<salesforce:oauth-authorization-code consumerKey="GQL8k1qt3XjTRbuZH0JTvFhIbeQIeDe.pzyEk2N5s.EbsULj" consumerSecret="B79AD844EDD56C393DBC09B8F701BC20A6B90078E182D873DA3E4A43A6AC8595"/>
+			<salesforce:oauth-callback-config listenerConfig="HTTP_CallBackListener" callbackPath="/oauth2callback" authorizePath="/authorize" externalCallbackUrl="http://localhost:8082/oauth2callback" />
+		</salesforce:config-with-oauth-connection>
+	</salesforce:sfdc-config>
+	<http:listener-config name="HTTP_CallBackListener" doc:name="HTTP Listener config" doc:id="abde55c0-f2a2-46c5-bdab-2bb88f28cb44" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="oauth2.0connectiondemoinsfFlow" doc:id="0ab9151c-999b-46fd-9040-6739a55a59ff" >
+		<http:listener doc:name="Listener" doc:id="b444417d-09ed-4ef2-9803-dd4941250f14" config-ref="HTTP_Listener_config" path="/getaccounts"/>
+		<salesforce:query doc:name="Query" doc:id="b2758d75-079b-42f8-b5e2-8a9dbf89b1bc" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query >select ID,name from Account</salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="b5b31212-8aad-49e2-8ec9-0cb3f37d7642" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

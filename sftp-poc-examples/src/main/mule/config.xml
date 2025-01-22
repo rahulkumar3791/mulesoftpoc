@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto"
+	xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	<global-property doc:name="Global Property" doc:id="4ffb2423-e5b6-4b3b-bd05-1396b1a407dd" name="env" value="dev" />
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="0a401a04-8c4e-4ac9-aa2c-abfa888b1fa3" >
+		<sftp:connection host="${sftp.server.host}" port="${sftp.server.port}" username="${sftp.server.user}" password="${sftp.server.password}" connectionTimeoutUnit="MILLISECONDS" connectionTimeout="${sftp.response.timeout}" responseTimeoutUnit="MILLISECONDS" responseTimeout="${sftp.response.timeout}"/>
+	</sftp:config>
+	<spring:config name="Spring_Config" doc:name="Spring Config" doc:id="a1f5af59-e5b2-4354-9ad9-a441bb696ff9" files="beans.xml" />
+	<spring:security-manager doc:name="Spring Security manager" doc:id="d07e900c-53e7-4dcb-8dbd-e658633bef36" >
+	<spring:delegate-security-provider name="memory-provider" delegate-ref="authenticationManager" />
+	</spring:security-manager>
+	<configuration-properties doc:name="Configuration properties" doc:id="1fb5605b-7267-4955-ac01-56bc872acb03" file="resources-${env}.properties" />
+</mule>

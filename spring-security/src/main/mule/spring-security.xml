@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a1d45fa2-6dcb-4992-8f96-178f47ad8ff8" >
+		<http:listener-connection host="${https.host}" port="${https.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="keystore" keyPassword="atcmule01" password="atcmule01" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<spring:config name="Spring_Config" doc:name="Spring Config" doc:id="e63aac80-c92a-43f7-86f8-67e4f36bde67" files="beans.xml" />
+	<spring:security-manager doc:name="Spring Security manager" doc:id="43d61ade-534e-4003-bce4-bcec07957435" >
+	<spring:delegate-security-provider name="memory-provider" delegate-ref="authenticationManager" />
+	</spring:security-manager>
+	
+	<configuration-properties doc:name="Configuration properties" doc:id="076a7c24-dc43-46f2-916a-89d641f90bd0" file="common.properties" />
+	<flow name="spring-securityFlow" doc:id="28ee6760-e04e-4528-860f-6bcde97b8452" >
+		<http:listener doc:name="Listener" doc:id="45651785-7931-4a0e-9977-d1223e816871" path="/springSecurity" config-ref="HTTP_Listener_config"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="2eaaa5d8-f9d2-4237-b843-546b78955a69" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<set-payload value='#["Spring Security Created"]' doc:name="Set Payload" doc:id="07fad63c-037d-482d-ab98-e66f8dde71cf" />
+	</flow>
+</mule>

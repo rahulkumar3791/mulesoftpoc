@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap"
+	xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	 <flow name="project-site-creation-tarantula-to-oracle-scheduler" doc:id="140b7064-74a1-416e-bc9c-2a32e6620c7b" >
+		<scheduler doc:name="Scheduler" doc:id="7488552d-4541-4d49-9306-6b9cffcdc159" disallowConcurrentExecution="true">
+			<scheduling-strategy >
+				<cron expression="${project.site.creation.tt.to.oracle.corn.expression}" timeZone="${project.site.creation.tt.to.oracle.timezone}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Choice" doc:id="2ca2bd73-70bb-4ab8-bf3f-be1ec8dd249c" >
+			<when expression="#[p('project.site.creation.tt.to.oracle.corn')]">
+				<flow-ref doc:name="project-site-creation-tarantula-to-oracle_mailFlow" doc:id="510eb5c4-2d49-4f87-bc2f-ca9a9e27078b" name="project-site-creation-tarantula-to-oracle_mailFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="1c56be28-3423-42df-92f3-12ee13ecc6ec" message='#["### Project-site-creation TT to Oracle flow Disabled via Trigger ###"]'/>
+			</otherwise>
+		</choice>
+	</flow> 
+	
+	 <flow name="project-status-tt-to-oracle-scheduler" doc:id="47ff7e0e-b02b-4dde-b024-687438dd8c66" >
+		<scheduler doc:name="Scheduler" doc:id="49df586f-1be7-4e31-a2f0-84add3789834" disallowConcurrentExecution="true">
+			<scheduling-strategy >
+				<cron expression="${project.status.tt.to.oracle.corn.expression}" timeZone="${project.status.tt.to.oracle.timezone}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Choice" doc:id="476bdcaa-8345-492b-bf6a-9ea56f4c45f3" >
+			<when expression="#[p('project.status.tt.to.oracle.corn')]">
+				<flow-ref doc:name="project-status-tt-to-oracle-mailFlow" doc:id="f3bde781-bb0a-403f-8b60-4289d4515a97" name="project-status-tt-to-oracle-mailFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="5cd765eb-fee5-4fd0-8cb7-d12eac47d6cb" message='#["### Project-status TT to Oracle flow Disabled via Trigger ###"]'/>
+			</otherwise>
+		</choice>
+	</flow> 
+	
+	
+	<flow name="purchase-requistion-scheduler" doc:id="80412445-7eaa-4394-9c89-a774bfd98f9b" >
+		<scheduler doc:name="Scheduler" doc:id="ae138ea4-7837-4974-af66-b6dc0d1f7ef6" disallowConcurrentExecution="true">
+			<scheduling-strategy >
+				<cron expression="${purchase.requisition.cron.expression}" timeZone="${purchase.requisition.timezone}"/>
+			</scheduling-strategy>
+		</scheduler>
+		<choice doc:name="Choice" doc:id="fa9b2790-e7bd-4ae8-bce1-d66eac4a25a8" >
+			<when expression="#[p('purchase.requisition.cron')]">
+				<flow-ref doc:name="purchase-requisition-mailFlow" doc:id="538eafb8-d97b-41a4-87e8-35869b5cfda0" name="purchase-requisition-mainFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="96672d8a-f5dd-476b-a801-59c9c827561e" message='#["### Purchase Requisition flow Disabled via Trigger ###"]'/>
+			</otherwise>
+		</choice>
+	</flow> 
+	
+	
+	
+	<!-- #############################  Endpoints List  ########################## -->
+<flow name="project-site-creation-tarantula-to-oracle-endpoint" doc:id="dceb0a97-992a-43d7-9df2-6a133c2356fd">
+		<http:listener doc:name="Listener" doc:id="19a4c069-7d0e-4b7f-9367-e72efb01c1f0" config-ref="HTTP_Listener" path="${project.site.creation.tt.to.oracle.projectsite.url}" />
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="01a05690-5b1c-4fae-970b-8172eeab984b" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="project-site-creation-tarantula-to-oracle-mainFlow" doc:id="a0bf9d8d-b5c7-488c-978a-f0ab678265ac" name="project-site-creation-tarantula-to-oracle_mailFlow"/>
+		<set-payload value="#[output application/json
+---
+{
+	message 		: &quot;Flow has been successfully completed&quot;,
+	Interface		: &quot;Project Site creation from  TARANTULA to Oracle&quot;,
+	recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',
+	currentLastRun 	: if(vars.lastUpdateDate != null) vars.lastUpdateDate 	else vars.lastRunDate,
+	batchNumber:  if(vars.totalRecords != null) vars.batchDetails.batchNumber[0] else 'Null'
+}]" doc:name="Response" doc:id="695233a8-0f6d-498e-a0fd-d3448d7c2cf8" />
+		<logger level="INFO" doc:name="Logger" doc:id="92dc96c4-7fd2-4094-b04a-ce65ce4c23e5" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2e558653-41c8-4628-a127-22b2a8515c77" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="ea5d46ef-1746-4d55-aca8-928882367068" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a98bc60b-c0cd-4183-af26-f7f0e66bd6b9" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="fcd1a7a2-d610-4ecc-b3ac-a8ec4d9ea08e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.site') default "I-0355",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+<flow name="project-site-creation-tarantula-to-oracle-siteid-http-endpoint" doc:id="5104aeb0-017b-4b2b-850a-6f22f917a88d">
+		<http:listener doc:name="Listener" doc:id="a7432c48-1764-463f-b2c2-d47a4ef77c1f" config-ref="HTTP_Listener" path="${project.site.creation.tt.to.oracle.projectsite.siteid.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="a0eb4e01-1eef-4ed8-873f-db4ba206e0b6" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="project-site-creation-tarantula-to-oracle-siteid_mailFlow" doc:id="2d61e6e6-2473-4f02-9fa9-5854ae4f08e6" name="project-site-creation-tarantula-to-oracle-siteid_mailFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c66ea1cb-25ef-4893-866b-cb1bb418717e" message="#[payload]" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="92d69d70-9394-4e2b-b813-85d99d1b52be" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="c979a07d-a8a8-4e05-b115-80c8620d7e25" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7b105da9-5529-4883-8a57-86b9ffd0d7e1" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="1914b42f-e819-422b-9680-b9bcb682d9e0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "HTTP",
+	interface_id: p('interface.id.project.site.ttid') default "I-0359",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+
+
+
+<flow name="project-status-tarantula-to-oracle-endpoint" doc:id="8a2b550b-381e-4dfe-9508-20cd81afc1bd">
+		<http:listener doc:name="Listener" doc:id="22c55248-348f-4a48-b209-a3de602e49eb" config-ref="HTTP_Listener" path="${project.status.tt.to.oracle.projectstatus.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="4d8a3a81-f0fe-4a7b-8841-816946bdedf2" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="project-status-tt-to-oracle-mailFlow" doc:id="658d2e0f-5dd1-431a-bbc1-1d83ef3779ca" name="project-status-tt-to-oracle-mailFlow"/>
+		<set-payload value="#[output application/json
+---
+{
+	message 		: &quot;Flow has been successfully completed&quot;,
+	Interface		: &quot;Project Status TARANTULA to Oracle&quot;,
+	recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',
+	currentLastRun 	: if(vars.lastUpdateDate != null) vars.lastUpdateDate 	else vars.lastRunDate,
+	batchNumber:  if(vars.totalRecords != null) vars.batchDetails.batchNumber[0] else 'Null'
+}]" doc:name="Response" doc:id="07798454-75af-46c4-ad7a-7886725a841d" />
+		<logger level="INFO" doc:name="Logger" doc:id="ac4b00f7-b70b-4914-9fd7-d36d78a24062" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7894428b-6795-47ce-825e-08d64dbf2720" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="20ba5ae2-14d5-4fce-ac64-8ba226a7cede" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="57cb1ffa-5ef5-4be1-ab2e-c1bbefb0664c" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="b196b801-0a42-424f-8ac1-53e1a644cad6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.status') default "I-0356",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+<flow name="project-status-tarantula-to-oracle-ttid-http-endpoint" doc:id="20e71b71-aecd-4618-a2a2-0bbdaadb3592">
+		<http:listener doc:name="Listener" doc:id="5b1559ef-d9fa-4e61-8415-ccca5f2cf33f" config-ref="HTTP_Listener" path="${project.status.tt.to.oracle.projectstatus.siteid.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="3a3e6966-7c2d-4cf2-bad5-e7c01a538c5b" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="project-status-tt-to-oracle-ttid-mailFlow" doc:id="e1309e3e-68ab-4b2e-b724-e25b93fea168" name="project-status-tt-to-oracle-ttid-mailFlow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="924d4689-d797-4ab1-93cf-b7babc0cb6f8" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="6e611707-0f4b-4408-a8e8-a939069d326f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="cd12722a-a32b-4fa6-8942-4607c29da9a9" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="5aecfc9f-1cd4-46f6-adf0-fa734c454076" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.project.status.ttid') default "I-0360",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+
+
+<flow name="purchase-requisition-endpoint" doc:id="b4b8d3b4-3496-488d-9d56-294ff1b9a7ff">
+		<http:listener doc:name="Listener" doc:id="da36a0f4-a6e5-4f73-b019-d0b8fd3262eb" config-ref="HTTP_Listener" path="${purchase.requisition.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="9f48116c-ff1d-4f50-b8d0-1280729a7a06" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="purchase-requisition-mainFlow" doc:id="6a4d828e-715e-458f-9d27-43871c7fbcf0" name="purchase-requisition-mainFlow"/>
+		<set-payload value="#[output application/json
+---
+{
+	message 		: &quot;Flow has been successfully completed&quot;,
+	InterfaceName   :  vars.flowName,
+	flow 			: &quot;Purchase Requisition : Oracle to Tarantula&quot;,
+	recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',
+	currentLastRun 	: if(vars.lastUpdateDate != null) vars.lastUpdateDate 	else vars.lastRunDate
+}]" doc:name="Response" doc:id="2794d52a-a892-481c-ac1f-442d7f763f89" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1b31bbb7-22f4-4097-bb67-a58af1823db0" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="edd61a1d-d89c-423e-9f2c-32ff77dd6667" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="af286c22-9b19-4504-8ade-c89701bc3db8" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="b9bdf831-65fa-4a72-90a0-6a0ea5524504" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.purchase.requisition') default "I-0357",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+<flow name="purchase-requisition-ttid-endpoint" doc:id="ffc82423-4882-4ae6-9356-733d24979005">
+		<http:listener doc:name="Listener" doc:id="2cf2d1bf-65e6-4064-8a5b-6c9a40fda17d" config-ref="HTTP_Listener" path="${purchase.requisition.siteid.url}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="9b506b0d-6f25-4d52-a8d4-8db121f95542" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="purchase-requisition-ttid-mainFlow" doc:id="2cf8d08e-46dc-414f-a244-f7c3990943bb" name="purchase-requisition-ttid-mainFlow"/>
+		<set-payload value="#[output application/json
+---
+{
+	message 		: &quot;Flow has been successfully completed&quot;,
+	Interface		: &quot;Purchase requisition LineId : Oracle to TARANTULA&quot;,
+	recordsProcessed: if(vars.totalRecords != null) vars.totalRecords else 'No records to update',
+	currentLastRun 	: if(vars.lastUpdateDate != null) vars.lastUpdateDate 	else vars.lastRunDate
+}]" doc:name="Set Payload" doc:id="65e640d8-184e-4d4c-b701-56edd5359a00" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="eeec3070-6798-40b3-9173-6198f2f0a4ca" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="ee695397-0067-498e-8ecb-322fadc66af6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failed",
+	message: "Basic Authentication Error. Please retry again."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="3abd9d56-1e90-4ae4-9a1b-acadd4b6e273" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="ca1df835-f52d-4a0d-bf71-d102a2ec3651" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('interface.id.purchase.requisition.ttid') default "I-0358",
+	service: p('current.project.name') default "atc-ebs-tarantula",
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+
+
+ 
+
+
+<error-handler name="default-error-handler" doc:id="2278417e-6911-4024-be33-288b0ed14620" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="328cd73f-bad5-43b9-96e2-48d6ac6c8798" type="ANY">
+			<ee:transform doc:name="Transform Message" doc:id="55636ce3-731c-4d90-a309-47641b325fef" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Error",
+	message: p('current.project.name') ++ " - Internal API Error",
+	interface_type: p('current.project.type') default "QUARTZ",
+	interface_id: p('current.project.id'),
+	service: p('current.project.name') default "atc-mexico-fiber",
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<flow name="get:\rest\health:endpoints-config">
+		<!-- <http:listener doc:name="Listener" doc:id="2537bab3-cf6c-4868-a32c-ad3a2470ea71" path="/api/rest/health"/> -->
+		<http:listener doc:name="Listener" doc:id="bef451a7-5424-44bc-89f3-c440a345424b" config-ref="HTTP_Listener" path="/api/rest/health"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="358d4319-5f80-40cc-a289-1886af6f9f55" realm="mule" >
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<flow-ref doc:name="health:\\health-main" doc:id="c862ef88-4794-42af-ae49-51b4261599d9" name="health:\\health-main" />
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="c90055bd-7d99-4310-b528-6bc87da77283" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7f558ae5-bd59-46b1-8ede-40db1b812eaf" type="HTTP:BASIC_AUTHENTICATION">
+				<ee:transform doc:name="Transform Message" doc:id="7c3f8048-7458-4b25-95eb-5de47a226a4c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c3be2c03-50f8-48e1-921e-f0fcab8ea1cb" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="7a34eb57-c3d9-4480-b43d-f4969277a13b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json 
+--- 
+{
+	"Status": "FAILED",
+	"Integration_id": p('current.project.id'),
+	"Integration_name": p('current.project.name'),
+	"error": {
+		"message": error.errorMessage.attributes['reasonPhrase'] default "None",
+		"type": (error.errorType.namespace default "ANY" ) ++ ':' ++ (error.errorType.identifier default "MULE") default "None"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+		
+	</flow>
+	<flow name="tarantula-getUpdateStatusRequisitionAndMoveOrderService" doc:id="759d1b02-75d1-40bc-813d-8b7fbe72c3d9" >
+		<http:listener doc:name="Get Requisition And Move Order Request" doc:id="76eaf21e-d3b9-4f12-9b3d-42ff51dd20c6" config-ref="HTTP_Listener" path="${get.requisition.and.move.order}"/>
+	    <http:basic-security-filter doc:name="Basic security filter" doc:id="55ac23ef-52e5-4d4d-a527-3582be059c97" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="0ef27e96-61a1-47fb-95b2-d2a3f2a1d6d2" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="eee00eef-eb2f-4f5d-be69-54e8b563302a" variableName="ip"/>
+		<logger level="INFO" doc:name="Log IP And Request Time" doc:id="7bbeaa4f-f7d6-4c0a-80a2-4ece1d2f426c" message='#["RequestTime " ++ vars.requestTime ++ "IP address :"++ vars.ip]'/>
+		<apikit-soap:router doc:name="Get Requisition And Move Order Data" doc:id="3cc1afc3-bb4b-48d5-a5c2-c94f409eb556" config-ref="soapkit-config-getRequisitionAndMoveOrder">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="tarantula-getRequisitionAndMoveOrderFlow" doc:id="34b53b88-b833-400b-af1e-00ce5e133e0c" name="tarantula-getRequisitionAndMoveOrderFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="51a6ebe0-18c7-4ba2-aaaa-21ac7d940d83" message="#['[GetRequisitionAndMoveOrderData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+	
+</flow>
+	<flow name="tarantula-inboundService-endpoint" doc:id="c0906a94-9679-41e1-93af-e294f1cc23d6" >
+		<http:listener doc:name="Insert Order Request" doc:id="c6a19403-7bb5-411c-80a8-577a46195fd8" config-ref="HTTP_Listener" path="${api.soap.set.order}"/>
+	    <http:basic-security-filter doc:name="Basic security filter" doc:id="8693c7f9-96aa-4414-a62d-065e0d8888e5" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="b5abc540-c2d9-496d-bb6c-8df0cb1e4071" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="e388e674-6d40-472b-b310-26c799151fbc" variableName="ip"/>
+		<logger level="INFO" doc:name="Log IP And Request Time" doc:id="9f140aed-17fa-4763-a3e8-3fcb9386d2e6" message='#["RequestTime " ++ vars.requestTime ++ "IP address :"++ vars.ip]'/>
+		<apikit-soap:router doc:name="Receive Order Data" doc:id="3df3420e-162a-4e2b-be1f-2e9a2b131f9f" config-ref="soapkit-config-setOrders">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="tarantula-InsertOrdersFlow" doc:id="1639b128-56ba-47b9-ab14-62512a75fc8d" name="tarantula-InsertOrdersFlow"/>
+		<logger level="INFO" doc:name="Response Time" doc:id="0234a056-e773-4d6c-827f-de2ebf2c3d77" message="#['[SetOrder][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+	
+</flow>
+	
+	<flow name="ebs-getLandLeaseData-endpoint" doc:id="45f707bd-dacd-4331-b288-b51139647a3b" > 
+	<http:listener doc:name="Get Land Lease Data" doc:id="38b7d3ff-9224-4d1c-9428-92cde14b7825" config-ref="HTTP_Listener" path="${api.soap.get.land.lease.data}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="41c3899e-d006-41a9-a04c-3f929ad651b8" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="c9134b73-3d9f-4126-8e7f-c6408a4a8091" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="f7e7e67a-7af1-494e-adb3-ffb1a36def81" variableName="ip"/>
+		<logger level="INFO" doc:name="Log IP And Request Time" doc:id="12b93ef4-557e-49e6-8130-67e71b9175f1" message='#["RequestTime " ++ vars.requestTime ++ "IP address :"++ vars.ip]'/>
+		<apikit-soap:router doc:name="Get Land Lease Data" doc:id="52b72ac6-3daf-479b-a342-0dafe87bbc5b" config-ref="soapkit-config-getLandLeaseData">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="ebs-getLandLeaseData-flow" doc:id="9832817c-17e9-43b5-a9fb-3803057be55b" name="ebs-getLandLeaseData-flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="9c4252fa-a4d0-4860-85ff-d7ab6a3744d1" message="#['[GetLandLeaseData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+
+</flow>
+
+
+
+<flow name="ebs-getTenantLeaseData-endpoint" doc:id="985b658a-9253-4c55-ae28-67b5f0ee0811" > 
+	<http:listener doc:name="Get Tenant Lease Data" doc:id="2c4d6b9b-b8d9-49c8-bd1c-1907a73b780e" config-ref="HTTP_Listener" path="${api.soap.get.tenant.lease.data}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="bc0d0596-f5e6-4721-aa8b-d019c3d236b0" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="613e6de4-a0a4-4d20-9421-d6e234d5f162" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="c71eddad-4117-46c4-aae9-b6478aa47e33" variableName="ip"/>
+		<logger level="INFO" doc:name="Log IP And Request Time" doc:id="07fac40f-7d76-43e0-8252-814f768eb11b" message='#["[GetTenantLeaseData]RequestTime " ++ vars.requestTime ++ "IP address :"++ vars.ip]'/>
+		<apikit-soap:router doc:name="Get Tenant Lease Data" doc:id="16968cf1-cc21-45c5-aa06-85b72ed8204a" config-ref="soapkit-config-getTenantLeaseData">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="ebs-getTenantLeaseData-flow" doc:id="effe639d-7688-48a6-b1c3-ef6b30f61829" name="ebs-getTenantLeaseData-flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="9017b7e1-56ff-4dbe-a8d7-7035ced43c18" message="#['[GetTenantLeaseData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+
+</flow>
+	
+	
+	<flow name="ebs-getLandLeaseRentData-endpoint" doc:id="f63d0e0b-b3a8-4206-bbd8-c6932f96f3e4" > 
+	<http:listener doc:name="Get Land Lease Rent Data" doc:id="1b9be8d0-4f25-424d-b1c6-27ef7dc826d5" config-ref="HTTP_Listener" path="${api.soap.get.land.lease.rent.data}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="12e495f2-ce63-4677-856c-cfdba96c247a" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="bd29a5b8-c189-4179-9c9a-c56bc4183dfb" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="1701be27-f93f-4ac0-9b52-49eaa8313591" variableName="ip"/>
+		<apikit-soap:router doc:name="Get Land Lease Rent Data" doc:id="2e30250f-6521-4135-8150-01cfdedf8a28" config-ref="soapkit-config-getLandLeaseRentData">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="ebs-getLandLeaseRentData-flow" doc:id="d8e971a6-87fd-4453-a07c-6e548fe82bea" name="ebs-getLandLeaseRentData-flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="32e7f60f-4602-42dd-a5d7-ab08f08dbd1d" message="#['[GetLandLeaseRentData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+
+</flow>
+	
+	
+	<flow name="vendor-flow-endpoint" doc:id="5ace5fdb-7851-4c7a-a808-6965f298c6d1" > 
+	<http:listener doc:name="Get Vendor Data" doc:id="8758b6bb-c399-4ff8-beb6-11d4638829f0" config-ref="HTTP_Listener" path="${api.soap.tarantula.service}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="24c01356-53d3-4f3c-af6c-cabca6663e26" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<set-variable value="#[now().milliseconds]" doc:name="Set requestTime" doc:id="e17652c1-7a44-47bf-8dcd-ab059b8f8d4a" variableName="requestTime"/>
+		<set-variable value='#[server.ip as String default "0.0.0.0"]' doc:name="Set IP" doc:id="6be48e41-0087-419c-b88d-6bd209223d2f" variableName="ip"/>
+		<logger level="INFO" doc:name="Log IP And Request Time" doc:id="765fe571-68c1-4f95-9c58-5205f23b4513" message='#["RequestTime " ++ vars.requestTime ++ "IP address :"++ vars.ip]'/>
+		<apikit-soap:router doc:name="Get Vendor Data" doc:id="364cdfb9-3de9-42b9-81aa-f51a72212b3e" config-ref="soapkit-config-tarantulaService">
+			<apikit-soap:attributes ><![CDATA[#[%dw 2.0
+              output application/java
+              ---
+              {
+                  headers: attributes.headers,
+                  method: attributes.method,
+                  queryString: attributes.queryString
+            }]]]></apikit-soap:attributes>
+		</apikit-soap:router>
+		<flow-ref doc:name="vendor-flow" doc:id="a100f841-44e0-4be1-b97c-4a93292ede5d" name="vendor-flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="d12f2e3a-11c1-43f3-9cbf-8c8dcbfd1486" message="#['[GetVendorData][ResponseTime : ' ++ vars.responseTime ++ ']']"/>
+
+</flow>
+
+
+<flow name="HTTPS-GET-common-control-table-flow-lastrunFlow" doc:id="c30e96c0-2d31-47ea-a8cf-8afc5b5f06a6" > 
+	<http:listener doc:name="GET Data" doc:id="bbb0625b-eae8-4b3c-996a-d4dba3dab934" config-ref="HTTP_Listener" path="${url.getControlTable}"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="9c9c4eec-b7b3-4ce0-a5fa-b3fa7c249e32" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<logger level="INFO" doc:name="Logger" doc:id="a8799ba3-232e-46bc-bd02-3be4121a1698" message="Inside the HTTPS-GET-common-control-table-flow-lastrunFlow"/>
+		<flow-ref doc:name="fetchAll-data-logicFlow" doc:id="11784241-074a-4282-8eff-b87f42584c4e" name="fetchAll-data-logicFlow"/>
+
+
+</flow>
+
+	
+		<flow name="HTTPS-POST-common-control-table-flow-lastrunFlow" doc:id="1fe51c32-5370-47e4-9d2a-fa2c8791bcbc" > 
+	<http:listener doc:name="POST Data" doc:id="ecd993d6-73e7-44b9-9830-2d79ad314349" config-ref="HTTP_Listener" path="${url.postControlTable}" allowedMethods="POST"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="bb02f9b1-a4c6-4f5c-a6d8-4e3771f638d6" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>	
+		<logger level="INFO" doc:name="Logger" doc:id="17c713a4-c770-4275-a302-f6eba5318cd4" message="Inside the HTTPS-POST-common-control-table-flow-lastrunFlow"/>
+		<ee:transform doc:name="Transform Message" doc:id="513520e2-cd47-4872-a6fd-281904374912" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	INTERFACE_NAME: payload.INTERFACE_NAME,
+	LAST_RUN_DATE: payload.LAST_RUN_DATE
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:update doc:name="Update" doc:id="42b19e0a-bd95-4dc8-a177-761efed7c6c0" config-ref="Oracle_Configuration">
+			<db:sql >UPDATE xxatc.ATC_IND_SVCS_CONTROL_TBL SET LAST_RUN_DATE=TO_DATE(:LAST_RUN_DATE,'DD-MM-YYYY HH24:MI:SS')  where INTERFACE_NAME=:INTERFACE_NAME</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"LAST_RUN_DATE" :payload.LAST_RUN_DATE,
+    "INTERFACE_NAME":payload.INTERFACE_NAME	
+
+}]]]></db:input-parameters>
+		</db:update>
+		<logger level="INFO" doc:name="Logger" doc:id="c58ca5e8-a6b4-4ecd-b3d7-ce2c9fdad75b" message="Response #[payload] POST CT flow has been completed"/>
+		<flow-ref doc:name="fetchAll-data-logicFlow" doc:id="3f913c95-ddbc-4490-bd72-cf4ea2f06953" name="fetchAll-data-logicFlow"/>
+
+</flow>
+	
+	
+</mule>

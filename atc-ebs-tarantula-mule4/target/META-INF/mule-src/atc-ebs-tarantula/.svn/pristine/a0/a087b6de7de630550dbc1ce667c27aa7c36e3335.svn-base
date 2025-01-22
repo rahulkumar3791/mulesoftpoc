@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd">
+    <flow doc:id="9d06f52c-f47a-49e1-88e7-891240285a6c" name="project-site-creation-tarantula-to-oracle_mailFlow">
+        <logger doc:id="a288bbef-3cce-4fae-836e-828dffe73a7f" doc:name="Flow Started" level="INFO" message="######### Project-site-creation-tarantula-to-oracle flow is started ########"/>
+        <ee:transform doc:id="a746042c-e43e-4698-a4c0-af66a74bb8a0" doc:name="variable Initialize">
+            <ee:variables>
+                <ee:set-variable variableName="ip"><![CDATA[server.ip as String default "0.0.0.0"]]></ee:set-variable>
+                <ee:set-variable variableName="flowName"><![CDATA["TT_PROJ_SITE"]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref doc:id="cefd35dd-cdab-4b06-8dbf-4293c9ff70a4" doc:name="project-site-creation-tarantula-to-oracle-mainLogicFlow" name="project-site-creation-tarantula-to-oracle-mainLogicFlow" />
+        <logger doc:id="ecad3338-67dd-44ca-ab91-27513062b8c1" doc:name="Flow Completed" level="INFO" message="###project-site-creation-tarantula-to-oracle flow is Completed ####"/>
+        <error-handler>
+            <on-error-propagate doc:id="0face82f-7db4-4bce-9995-ebb6debec773" doc:name="On Error Propagate" enableNotifications="true" logException="true" type="ANY">
+                <set-variable doc:id="4894fdb5-e62b-4e07-bd8d-2f2f3366506b" doc:name="Set errorMsg" value="#[error.detailedDescription]" variableName="errorMsg"/>
+                <logger doc:id="67e2b8df-8342-4479-bea9-8119b53738d6" doc:name="Error Log" level="INFO" message="#[vars.errorMsg]"/>
+                <set-variable doc:id="6ba6d45d-fa1a-4b3a-afc1-099b85826a2e" doc:name="Set Status" value="#[&quot;Failed&quot;]" variableName="status"/>
+                <ee:transform doc:id="0b10f922-f7a0-4a4b-8d46-45501cc1b4a0" doc:name="Email-Audit Payload">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('interface.id.project.site') ,
+   "interface_type": p('current.project.type'),
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": vars.status,
+   	      "flowName": "Project Site creation from  TARANTULA to Oracle",
+          "error" : vars.errorMsg
+         }
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+                <flow-ref doc:id="13755d4f-015f-447c-aa19-9211f8df9607" doc:name="send-email-audit-Flow" name="send-email-audit-Flow"/>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow doc:id="f8dd7cf8-9793-4052-9e9e-7a055df42f1e" name="project-site-creation-tarantula-to-oracle-mainLogicFlow">
+        <flow-ref doc:id="a94fda96-5659-4f46-a02d-fb027445707b" doc:name="ControlFlow-Read-LastRunDateFlow" name="ControlFlow-Read-LastRunDateFlow"/>
+		<ee:transform doc:id="e1b8e721-9009-4da5-a051-e07bb64037a1" doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	INTERFACE_NAME : payload[0].INTERFACE_NAME,
+	LAST_RUN_DATE : vars.lastRunDate
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="lastRunDate"><![CDATA[%dw 2.0
+output application/java
+---
+payload[0].LAST_RUN_DATE]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<flow-ref doc:id="208b949d-db6c-4848-a317-7b426dd09b64" doc:name="common-Generate-Batch-Number-subFlow" name="common-Generate-Batch-Number-subFlow" target="batchDetails"/>
+        <flow-ref doc:id="579f65c0-df38-4a0b-a4d4-0543ef4e6d3a" doc:name="project-Site-Creation-ReadFrom-TT-subFlow" name="project-Site-Creation-ReadFrom-TT-subFlow"/>
+        <logger doc:id="b7885e88-0e71-49ed-893a-5c9e66fe2fff" doc:name="Log TT data" level="INFO" message="#[&quot;After Reading the Data from SQL Server: &quot; ++  write(payload,'application/json')]"/>
+        <choice doc:id="910b98d0-178f-47d3-ae0d-c2fbe6120492" doc:name="Choice">
+            <when expression="#[sizeOf(payload)&gt;0]">
+                <flow-ref doc:id="2371fe09-0bd9-4a76-a900-44ca421caa87" doc:name="project-Site-Creation-WriteTo-Oracle-subFlow" name="project-Site-Creation-WriteTo-Oracle-subFlow"/>
+                <flow-ref doc:id="bcd060ff-1d58-4148-9cf9-7dbcd250eddf" doc:name="project-Site-Creation-Get-maxLastRunDateSub_Flow" name="project-Site-Creation-Get-maxLastRunDateSub_Flow"/>
+                <flow-ref doc:id="73442ce4-522b-4e3d-9caf-72187a96346c" doc:name="project-Site-Creation-ControlTable-Update-subFlow" name="ControlTable-Update-subFlow"/>
+            </when>
+            <otherwise>
+                <logger doc:id="e95c7874-f363-4b1d-8050-7a70d9c1f4a7" doc:name="Log No updated records" level="INFO" message="No Updated Records available"/>
+            </otherwise>
+        </choice>
+		<choice doc:name="Choice" doc:id="ed4e9232-8ea2-468b-b7f5-40e95fe31e8a" >
+			<when expression="#[sizeOf(vars.totalRecords) &gt; 0]">
+				<set-variable doc:id="d2c62da9-277f-4cd2-85d3-02ff528d3af9" doc:name="Set Status" value="#[&quot;success&quot;]" variableName="status" />
+				<ee:transform doc:id="90f839bb-ee0e-4691-844e-6aa60e2b7f44" doc:name="Email Audit Payload">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('interface.id.project.site') ,
+   "interface_type": p('current.project.type'),
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": vars.status,
+   	      "flowName": "Project Site creation from  TARANTULA to Oracle",
+          "recordsProcessed" : vars.totalRecords,
+          "currentLastRunDate" : vars.lastUpdateDate,
+          "batchNumber": vars.batchDetails.batchNumber[0]
+         }
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+				<flow-ref doc:id="5b5a53c4-62a3-48b8-a1ff-c67f395f6ab2" doc:name="send-email-audit-Flow" name="send-email-audit-Flow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="9201887e-187e-4c06-a4a8-2d7b33cb69ac" message="##########No record processed############"/>
+			</otherwise>
+		</choice>
+    </flow>
+    <flow doc:id="56f0a171-8f27-49de-b6c3-403cfba0cf8f" name="project-Site-Creation-ReadFrom-TT-subFlow">
+        <db:select config-ref="SQL_Server_Database_Config" doc:id="b3475ec8-d4a7-44b4-823d-3e92fbcd8112" doc:name="Select SQL Server Database">
+            <db:sql>SELECT TTID,SOType,SODate,GlobalSiteID,SAPID,ATCSiteID,SiteName,Entity,Circle,CustomerID,LeaseTenure,TowerTenure,TowerType,TowerHeight,WindSpeed,Portfolio,Region,Cluster,Address1,Address2,Address3,Address4,PinCode,City,State,Province,County,Country,CONVERT(DATETIME2(0),LastUpdatedDate) &quot;LastUpdatedDate&quot; FROM O_Project_Site WHERE CONVERT(DATETIME2(0),LastUpdatedDate) &gt; :lastRunDate</db:sql>
+            <db:input-parameters><![CDATA[#[{
+	"lastRunDate" : payload.LAST_RUN_DATE
+}]]]></db:input-parameters>
+        </db:select>
+		<ee:transform doc:id="9ecdab31-4180-42ad-997f-19d12b71815a" doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+import modules::escapeChar
+import decodeURIComponent from dw::core::URL
+output application/java
+---
+payload map (payload01 , indexOfPayload01) -> {
+		TT_ID				:  payload01.TTID,
+		SO_TYPE 			:  payload01.SOType,
+		SO_DATE				:  payload01.SODate as LocalDateTime {format: "yyyy-MM-dd HH:mm:ss.S" } as String {format: "yyyy-MM-dd'T'HH:mm:ss"},
+		GLOBAL_SITE_ID		:  payload01.GlobalSiteID,
+		SAP_ID				:  payload01.SAPID,
+		SITE_ID				:  payload01.ATCSiteID,
+		SITE_NAME			:  payload01.SiteName ,
+		LEGAL_ENTITY		:  payload01.Entity,
+		CIRCLE				:  payload01.Circle ,
+		CUSTOMER_ID			:  payload01.CustomerID ,
+		LAND_TENURE			:  payload01.LeaseTenure,
+		LEASE_TENURE		:  payload01.TowerTenure,
+		FEATURE_TOWER_CLASS	:  payload01.TowerType,
+		TOWER_HEIGHT		:  payload01.TowerHeight ,
+		WIND_SPEED			:  payload01.WindSpeed,
+		PORTFOLIO			:  payload01.Portfolio,
+		TOWER_REGION		:  payload01.Region ,
+		CLUSTER_NAME		:  payload01.Cluster ,
+		ADDRESS_LINE_1		:  if(payload01.Address1 != null) write(escapeChar::escapeSpecialSOQLChars(decodeURIComponent(payload01.Address1), '\'"*&\\'),'text/plain') replace "\\" with "" else payload01.Address1,
+		ADDRESS_LINE_2		:  if(payload01.Address2 != null) write(escapeChar::escapeSpecialSOQLChars(decodeURIComponent(payload01.Address2), '\'"*&\\'),'text/plain') replace "\\" with "" else payload01.Address2, 
+		ADDRESS_LINE_3		:  if(payload01.Address3 != null) write(escapeChar::escapeSpecialSOQLChars(decodeURIComponent(payload01.Address3), '\'"*&\\'),'text/plain') replace "\\" with "" else payload01.Address3,
+		ADDRESS_LINE_4		:  if(payload01.Address4 != null) write(escapeChar::escapeSpecialSOQLChars(decodeURIComponent(payload01.Address4), '\'"*&\\'),'text/plain') replace "\\" with "" else payload01.Address4,
+		POSTAL_CODE			:  payload01.PinCode,
+		CITY				:  if(payload01.City != null) write(escapeChar::escapeSpecialSOQLChars(decodeURIComponent(payload01.City), '\'"*&\\'),'text/plain') replace "\\" with "" else payload01.City, 
+		STATE				:  payload01.State,
+		PROVINCE			:  payload01.Province,
+		COUNTY				:  payload01.County,
+		COUNTRY				:  payload01.Country,
+		BATCH_NUMBER		: vars.batchdetails.batchNumber[0],
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+				<ee:set-variable variableName="ListOfLastUpdatedDate" ><![CDATA[%dw 2.0
+output application/java
+---
+(payload map ((payload01 , indexOfPayload01) -> {
+	date: payload01.LastUpdatedDate
+}) orderBy $.date)]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+    <flow doc:id="9223fd98-727b-4c3a-bc61-f77c912f609a" name="project-Site-Creation-WriteTo-Oracle-subFlow">
+        <logger doc:id="97499efe-2935-40d8-86cb-cf4c35ed50d1" doc:name="Log Writing data to Oracle" level="INFO" message="---------------------Project Site TT to Oracle--------Writing Data to Oracle-----------------------------"/>
+        <set-variable value="0" doc:name="Initialize totalRecords" doc:id="405c1452-c905-42d0-885b-0a96fe7ee214" variableName="totalRecords"/>
+		<set-variable value="#[[]]" doc:name="initalize recordlist" doc:id="583f3cad-4de3-42b7-adea-17a3a5ea13b6" variableName="recordlist"/>
+        <foreach doc:name="For Each" doc:id="44a72f39-ae42-433a-b5b8-03b61517efa1" collection="#[payload]">
+			<set-variable value='#[output application/java --- (vars.recordlist default []) + ({"BATCH_NUMBER" : payload.BATCH_NUMBER,"TT_ID" : payload.TT_ID,"SO_TYPE" : payload.SO_TYPE,"SO_DATE" : payload.SO_DATE,"GLOBAL_SITE_ID" : payload.GLOBAL_SITE_ID,"SAP_ID":payload.SAP_ID,"SITE_ID": payload.SITE_ID,"SITE_NAME" : payload.SITE_NAME,"LEGAL_ENTITY" : payload.LEGAL_ENTITY,"CIRCLE": payload.CIRCLE,"CUSTOMER_ID" : payload.CUSTOMER_ID,"LEASE_TENURE" : payload.LEASE_TENURE,"TOWER_TENURE" : payload.TOWER_TENURE,"FEATURE_TOWER_CLASS" : payload.FEATURE_TOWER_CLASS,"TOWER_HEIGHT" : payload.TOWER_HEIGHT,"WIND_SPEED" : payload.WIND_SPEED,"PORTFOLIO" : payload.PORTFOLIO,"TOWER_REGION": payload.TOWER_REGION,"CLUSTER_NAME" : payload.CLUSTER_NAME,"ADDRESS_LINE_1" : payload.ADDRESS_LINE_1,"ADDRESS_LINE_2" : payload.ADDRESS_LINE_2,"ADDRESS_LINE_3" : payload.ADDRESS_LINE_3,"ADDRESS_LINE_4" : payload.ADDRESS_LINE_4,"POSTAL_CODE" : payload.POSTAL_CODE,"CITY" : payload.CITY,"STATE" : payload.STATE,"PROVINCE" : payload.PROVINCE,"COUNTY": payload.COUNTY,"COUNTRY" : payload.COUNTRY })]' doc:name="Add data in list" doc:id="e1db5b03-a115-4cd1-8ba5-c6ef3ce4f14c" variableName="recordlist"/>
+		</foreach>
+		<set-payload value="#[%dw 2.0
+import * from dw::core::Arrays
+output application/java
+---
+vars.recordlist default [] divideBy p('project.site.creation.tt.to.oracle.bulk.insert.batch.size')]" doc:name="Set Payload" doc:id="7849c16a-4cd5-4847-ab3d-a15ad053ee2c" />
+        <foreach doc:name="For Each" doc:id="dbee87d8-a1ba-4ddc-aed0-82ed36430339" collection="#[payload]">
+			<try doc:name="Try" doc:id="0e89b635-4218-4bc1-b06e-e0c2548e8176" transactionalAction="ALWAYS_BEGIN">
+				<db:bulk-insert doc:name="Bulk insert" doc:id="d8196f4f-e266-4a0a-9488-eecae7c6ace3" config-ref="Oracle_Configuration">
+			<db:sql>INSERT INTO XXATC.ATC_PA_IND_SVCS_PRSITE_TT_STG(BATCH_NUMBER,TT_ID,SO_TYPE,SO_DATE,GLOBAL_SITE_ID,SAP_ID,SITE_ID,SITE_NAME,LEGAL_ENTITY,CIRCLE,CUSTOMER_ID,LEASE_TENURE,TOWER_TENURE,FEATURE_TOWER_CLASS,TOWER_HEIGHT,WIND_SPEED,PORTFOLIO,TOWER_REGION,CLUSTER_NAME,ADDRESS_LINE_1,ADDRESS_LINE_2,ADDRESS_LINE_3,ADDRESS_LINE_4,POSTAL_CODE,CITY,STATE,PROVINCE,COUNTY,COUNTRY) VALUES (:BATCH_NUMBER,:TT_ID,:SO_TYPE,TO_DATE(:SO_DATE,'yyyy-MM-dd&quot;T&quot;HH24:mi:ss') ,:GLOBAL_SITE_ID,:SAP_ID,:SITE_ID,:SITE_NAME,:LEGAL_ENTITY,:CIRCLE,:CUSTOMER_ID,:LEASE_TENURE,:TOWER_TENURE,:FEATURE_TOWER_CLASS,:TOWER_HEIGHT,:WIND_SPEED,:PORTFOLIO,:TOWER_REGION,:CLUSTER_NAME,:ADDRESS_LINE_1,:ADDRESS_LINE_2,:ADDRESS_LINE_3,:ADDRESS_LINE_4,:POSTAL_CODE,:CITY,:STATE,:PROVINCE,:COUNTY,:COUNTRY)
+</db:sql>
+		</db:bulk-insert>
+				<set-variable value="#[sizeOf(payload) + vars.totalRecords]" doc:name="Set totalRecords" doc:id="f50f7196-683d-43cb-a155-ffe4c7a3ba9d" variableName="totalRecords"/>
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="32b829d9-7079-4897-9664-cf8d016399a2" >
+						<logger level="INFO" doc:name="Logger" doc:id="46725997-229a-4194-8b03-509b67b4f548" message="########## Batch Failed #########"/>
+						<logger level="ERROR" doc:name="Log Error" doc:id="d070d86f-f630-4964-ad35-daa852550103" message="#[error.detailedDescription]"/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<logger doc:id="3926e50d-d977-4c79-8ffd-151d9bda8854" doc:name="Log Rows inserted" level="INFO" message='#["Inserted Rows in to table:" ++ sizeOf(payload)]'/>
+    </flow>
+    <flow doc:id="cd81cf60-5967-4dfb-a00d-0512f7ec5f6c" name="project-Site-Creation-Get-maxLastRunDateSub_Flow">
+        <logger doc:id="7cdb2c4a-9d1e-4735-b265-2407272d9e5a" doc:name="Log reading LastRunDate" level="INFO" message="---------------------Reading max LastRunDate-------------------------"/>
+        <set-variable doc:id="70a37056-d181-4523-89d7-613a1621db15" doc:name="Set lastUpdateDate" value='#[vars.ListOfLastUpdatedDate[0].date as LocalDateTime {format: "yyyy-MM-dd HH:mm:ss"} as String {format: "dd-MM-yyyy HH:mm:ss"}]' variableName="lastUpdateDate"/>
+        <logger doc:id="9a5c9b6f-de13-4fd4-acc9-c3dbbb71789b" doc:name="Log maxLastUpdatedDate" level="INFO" message='#["maxLastUpdatedDate from TT==&gt;" ++ if(payload[0].maxLastUpdatedDate != null) payload[0].maxLastUpdatedDate else "null"]'/>
+    </flow>
+   </mule>

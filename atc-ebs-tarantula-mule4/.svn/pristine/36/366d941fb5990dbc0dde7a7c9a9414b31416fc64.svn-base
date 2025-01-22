@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="Project-Status-TT-to-Oracle-MainFlow">
+		<quartz:inbound-endpoint jobName="ProjectStatus"
+			cronExpression="${projectstatus.cron.expr}" repeatInterval="0"
+			responseTimeout="10000" doc:name="Quartz">
+			<quartz:event-generator-job />
+		</quartz:inbound-endpoint>
+		<set-variable variableName="flowName" value="#['Project Status']"
+			doc:name="flowName" />
+		<set-variable variableName="ip"
+			value="#[message.inboundProperties['X-Forwarded-For']]" doc:name="Set ip" />
+		<logger
+			message="In Project Status Quartz Flow,Cron Scheduler is ${cron.schedule}"
+			level="INFO" doc:name="Log In Quatz Flow" />
+		<set-variable variableName="cron" value="${cron.schedule}"
+			doc:name="cronScheduler" />
+		<choice doc:name="Choice">
+			<when expression="flowVars.cron == 'OFF'">
+				<logger
+					message="#['As cron.schedule property is OFF, please Invoke service Using HTTP endpoint']"
+					level="INFO" doc:name="Logger" />
+			</when>
+			<otherwise>
+				<flow-ref name="project-status-main-Flow" doc:name="project-status-main-Flow" />
+			</otherwise>
+		</choice>
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="project-status-main-Flow">
+		<ee:multi-transactional action="ALWAYS_BEGIN"
+			doc:name="Transactional">
+			<flow-ref name="Project-Status-MainLogicFlow" doc:name="Project-Status-MainLogicFlow" />
+		</ee:multi-transactional>
+		<choice doc:name="Choice">
+			<when expression="flowVars.flag == 0">
+				<flow-ref name="project-status-FinalMessage-subFlow"
+					doc:name="project-status-FinalMessage-subFlow" />
+			</when>
+			<otherwise>
+				<dw:transform-message doc:name="Transform Message">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	message 		: "Flow has been completed with errors",
+	Interface		: "Project Status from  TARANTULA to Oracle"
+}]]></dw:set-payload>
+				</dw:transform-message>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="Project-Status-TT-to-Oracle-Http-Flow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/projectstatus" allowedMethods="GET" doc:name="HTTP" />
+		<mule-ss:http-security-filter realm="mule-realm" />
+		<set-variable variableName="flowName" value="#['Project Status']"
+			doc:name="flowName" />
+		<set-variable variableName="ip"
+			value="#[message.inboundProperties['X-Forwarded-For']]" doc:name="Set ip" />
+
+		<logger
+			message="----------------------Starting Project-Status-TT-to-Oracle-Http-Flow ----------------------------"
+			level="INFO" doc:name="Log Start of flow" />
+		<flow-ref name="project-status-main-Flow" doc:name="project-status-main-Flow" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="Project-Status-MainLogicFlow">
+		<set-variable variableName="interfaceNumber" value="${interface.id.project.site}"
+			doc:name="interfaceNumber" />
+		<set-variable variableName="interface_type" value="${interface.type}"
+			doc:name="interfaceType" />
+		<logger message="Inside Tarantula Project Status" level="INFO"
+			doc:name="Log interface" />
+		<set-variable variableName="flowName" value="#['TT_PROJ_STATUS']"
+			doc:name="InterfaceName" />
+		<flow-ref name="ControlFlow-Read-LastRunDateFlow" doc:name="ControlFlow-Read-LastRunDateFlow" />
+
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+			<dw:set-variable variableName="lastRunDate"><![CDATA[%dw 1.0
+%output application/java
+---
+payload[0].LAST_RUN_DATE]]></dw:set-variable>
+		</dw:transform-message>
+		<enricher source="#[payload[0].batchNumber]" target="#[flowVars.batchID]"
+			doc:name="Message Enricher">
+			<flow-ref name="common-Generate-Batch-Number-subFlow"
+				doc:name="common-Generate-Batch-Number-subFlow" />
+		</enricher>
+
+		<flow-ref name="Project-Status-ReadFrom-TT-subFlow" doc:name="Project-Status-ReadFrom-TT-subFlow" />
+		<choice doc:name="Choice">
+			<when expression="payload.size()==0">
+				<logger message="No Updated Records available" level="INFO"
+					doc:name="Log No updated records" />
+			</when>
+			<otherwise>
+				<flow-ref name="Project-Status-WriteTo-Oracle-subFlow"
+					doc:name="Project-Status-WriteTo-Oracle-subFlow" />
+				<flow-ref name="Project-Status-Get-maxLastRunDateSub_Flow"
+					doc:name="Project-Status-Get-maxLastRunDateSub_Flow" />
+				<flow-ref name="Project-Status-ControlTable-Update-subFlow"
+					doc:name="Project-Status-ControlTable-Update-subFlow" />
+				<flow-ref name="successMail_Sub_Flow" doc:name="successMail_Sub_Flow" />
+				<flow-ref name="getAuditDataFlow" doc:name="getAuditDataFlow" />
+
+			</otherwise>
+		</choice>
+		<set-variable variableName="flag" value="#['0']"
+			doc:name="flag" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+
+	</flow>
+	<sub-flow name="Project-Status-ReadFrom-TT-subFlow">
+		<logger message="Reading data from TT" level="INFO" doc:name="Log Reading Data" />
+		<db:select config-ref="Generic_Database_Configuration"
+			doc:name="SQLServer Database">
+			<db:dynamic-query><![CDATA[SELECT TTID, TTIDStatus, CONVERT(DATETIME2(0),date) "ttDate",CONVERT(DATETIME2(0),LastUpdatedDate) "LastUpdatedDate"
+FROM O_Project_Status WHERE CONVERT(DATETIME2(0),LastUpdatedDate) > '#[flowVars.lastRunDate]']]></db:dynamic-query>
+		</db:select>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+		TT_ID: payload01.TTID,
+		TT_ID_STATUS: payload01.TTIDStatus,
+		TT_DATE: payload01.ttDate as :string {format: "yyyy-MM-dd HH:mm:ss"},
+		BATCH_NUMBER : flowVars.batchID
+		})]]></dw:set-payload>
+			<dw:set-variable variableName="ListOfLastUpdatedDate"><![CDATA[%dw 1.0
+%output application/java
+---
+(payload map ((payload01 , indexOfPayload01) -> {
+	date: payload01.LastUpdatedDate
+}) orderBy $.date)[-1..0]]]></dw:set-variable>
+
+		</dw:transform-message>
+		<set-variable variableName="ttData" value="#[payload]"
+			doc:name="TT Data" />
+
+
+	</sub-flow>
+	<sub-flow name="Project-Status-WriteTo-Oracle-subFlow">
+		<logger message="------------ Writing data to Oracle---------------"
+			level="INFO" doc:name="Log Writing data" />
+		<expression-component doc:name="Define Success List and Failure List"><![CDATA[flowVars.successList = new ArrayList();
+flowVars.failureList=new ArrayList();]]></expression-component>
+		<scatter-gather doc:name="Scatter-Gather">
+			<processor-chain>
+				<db:insert config-ref="Oracle_Configuration" bulkMode="true"
+					doc:name="Database">
+					<db:dynamic-query><![CDATA[INSERT INTO XXATC.ATC_PA_IND_PS_UPD_TT_STG_ARC(BATCH_NUMBER,TT_ID, TT_ID_STATUS, TT_DATE) VALUES ('#[payload.BATCH_NUMBER]', '#[payload.TT_ID]', '#[payload.TT_ID_STATUS]',TO_DATE('#[payload.TT_DATE]','yyyy-MM-dd HH24:mi:ss'))]]></db:dynamic-query>
+				</db:insert>
+				<logger
+					message="------------------------Records Archived in ATC_PA_IND_PS_UPD_TT_STG_ARC-------------------------------------------------------------------------"
+					level="INFO" doc:name="Logger" />
+			</processor-chain>
+			<foreach doc:name="For Each">
+				<flow-ref name="ForEachFlow_success_projectStatus"
+					doc:name="ForEachFlow_success" />
+			</foreach>
+		</scatter-gather>
+	</sub-flow>
+	<flow name="Project-Status-Get-maxLastRunDateSub_Flow">
+		<set-variable variableName="lastUpdateDate"
+			value="#[flowVars.ListOfLastUpdatedDate[0].date]" doc:name="lastUpdateDate" />
+		<set-variable variableName="totalRecords"
+			value="#[flowVars.ListOfLastUpdatedDate.size()]" doc:name="payloadSize" />
+
+		<logger
+			message="maxLastUpdatedDate from TT==&gt; #[payload[0].maxLastUpdatedDate]"
+			level="INFO" doc:name="Log maxLastUpdatedDate" />
+
+	</flow>
+	<sub-flow name="Project-Status-ControlTable-Update-subFlow">
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	flowName : 'TT_PROJ_STATUS',
+	lastRunDate : flowVars.lastUpdateDate as :localdatetime {format: "yyyy-MM-dd HH:mm:ss"}
+														  as :string {format: "dd-MM-yyyy HH:mm:ss"}
+}]]></dw:set-payload>
+
+		</dw:transform-message>
+		<vm:outbound-endpoint exchange-pattern="request-response"
+			path="writeLastRunDate" connector-ref="VM_Control_Table" doc:name="VM" />
+
+
+	</sub-flow>
+	<sub-flow name="project-status-FinalMessage-subFlow">
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	message 		: "Flow has been successfully completed",
+	Interface		: "Project Status from  TARANTULA to Oracle",
+	recordsProcessed: flowVars.totalRecords 
+	when flowVars.totalRecords != null otherwise 'No records to update',
+	currentLastRun 	: flowVars.lastUpdateDate
+					  when flowVars.lastUpdateDate != null
+					  otherwise flowVars.lastRunDate,
+	batchNumber: flowVars.batchID
+	when flowVars.totalRecords != null otherwise 'Null'
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<logger message="#[message.payloadAs(java.lang.String)]" level="INFO"
+			doc:name="Log Payload" />
+		<logger
+			message="================End of Tarantula to Oracle ProjectStatusFlow================="
+			level="INFO" doc:name="Log End of Flow" />
+	</sub-flow>
+
+
+	<flow name="getAuditDataFlow">
+		<logger
+			message="#['Flow has been completed successfully. Sending Audit Data...']"
+			level="INFO" doc:name="Log Sending Audit data" />
+		<choice doc:name="Choice">
+			<when expression="flowVars.flowName == 'TT_PROJ_SITE'">
+				<set-variable variableName="interFaceName"
+					value="#['Project Site creation from  TARANTULA to Oracle']"
+					doc:name="projectSite" />
+
+				<set-variable variableName="dataDetails"
+					value="#['&quot;service&quot;: &quot;atc-esb-tarantula&quot;, &quot;TTID Success Records&quot;: &quot;'+flowVars.successList+'&quot;, &quot;TTID Failure Records&quot;: &quot;'+flowVars.failureList+'&quot;, &quot;timestamp&quot;: &quot;' + new java.util.Date().toString() + '&quot;, &quot;Source Database&quot;: &quot;Tarantula&quot;,  &quot;Target Database&quot;: &quot;Oracle&quot;, &quot;Last Run Date&quot;: &quot;' +flowVars.lastUpdateDate+ '&quot;, &quot;Records Processed&quot;: &quot;' +flowVars.totalRecords+ '&quot;,&quot;Batch ID&quot;: &quot;' +flowVars.batchID+ '&quot;,&quot;Interface Name&quot;: &quot;' +flowVars.interFaceName+ '&quot;,&quot;status&quot;: &quot;Success&quot;']"
+					doc:name="Set Data" />
+				<expression-transformer
+					expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;,&quot;timestamp&quot;: new java.util.Date().toString() , &quot;interface_number&quot;: &quot;&quot;+flowVars.interfaceNumber+&quot;&quot;, &quot;interface_type&quot;: &quot;&quot;+flowVars.interface_type+&quot;&quot;, &quot;requester_ip&quot;:&quot;&quot;+flowVars.ip+&quot;&quot;, &quot;status&quot;: [&quot;code&quot;: &quot;200&quot; , &quot;message&quot;: &quot;Success&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]"
+					doc:name="Build Audit Map" />
+				<vm:outbound-endpoint exchange-pattern="one-way"
+					path="atc.mule.audit" doc:name="VM" />
+				<logger message="#['Data sent for Audit']" level="INFO"
+					doc:name="Info - Log Audit" />
+
+			</when>
+			<when expression="flowVars.flowName == 'TT_PROJ_STATUS'">
+				<set-variable variableName="interFaceName"
+					value="#['Project Status from  TARANTULA to Oracle']" doc:name="projectStatus" />
+
+				<set-variable variableName="dataDetails"
+					value="#['&quot;service&quot;: &quot;atc-esb-tarantula&quot;, &quot;TTID Success Records&quot;: &quot;'+flowVars.successList+'&quot;, &quot;TTID Failure Records&quot;: &quot;'+flowVars.failureList+'&quot;,&quot;timestamp&quot;: &quot;' + new java.util.Date().toString() + '&quot;, &quot;Source Database&quot;: &quot;Tarantula&quot;,  &quot;Target Database&quot;: &quot;Oracle&quot;, &quot;Current Last Run Date&quot;: &quot;' +flowVars.lastUpdateDate+ '&quot;, &quot;Records Processed&quot;: &quot;' +flowVars.totalRecords+ '&quot;,&quot;Batch ID&quot;: &quot;' +flowVars.batchID+ '&quot;,&quot;Interface Name&quot;: &quot;' +flowVars.interFaceName+ '&quot;,&quot;status&quot;: &quot;Success&quot;']"
+					doc:name="Set Data" />
+				<expression-transformer
+					expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;,&quot;timestamp&quot;: new java.util.Date().toString() , &quot;interface_number&quot;: &quot;&quot;+flowVars.interfaceNumber+&quot;&quot;, &quot;interface_type&quot;: &quot;&quot;+flowVars.interface_type+&quot;&quot;, &quot;requester_ip&quot;:&quot;&quot;+flowVars.ip+&quot;&quot;, &quot;status&quot;: [&quot;code&quot;: &quot;200&quot; , &quot;message&quot;: &quot;Success&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]"
+					doc:name="Build Audit Map" />
+				<vm:outbound-endpoint exchange-pattern="one-way"
+					path="atc.mule.audit" doc:name="VM" />
+				<logger message="#['Data sent for Audit']" level="INFO"
+					doc:name="Info - Log Audit" />
+
+			</when>
+			<otherwise>
+				<set-variable variableName="interFaceName"
+					value="#['Purchase Requisition from Oracle to Tarantula']"
+					doc:name="purchaseRequisition" />
+
+				<set-variable variableName="dataDetails"
+					value="#['&quot;service&quot;: &quot;atc-esb-tarantula&quot;,&quot;PR_lineID Success Records&quot;: &quot;'+flowVars.successList+'&quot;, &quot;PR_lineID Failure Records&quot;: &quot;'+flowVars.failureList+'&quot;, &quot;timestamp&quot;: &quot;' + new java.util.Date().toString() + '&quot;, &quot;Source Database&quot;: &quot;Oracle&quot;,  &quot;Target Database&quot;: &quot;Tarantula&quot;, &quot;Last Run Date&quot;: &quot;' +flowVars.lastUpdateDate+ '&quot;, &quot;Records Processed&quot;: &quot;' +flowVars.totalRecords+ '&quot;,&quot;Batch ID&quot;: &quot;' +flowVars.batchID+ '&quot;,&quot;Interface Name&quot;: &quot;' +flowVars.interFaceName+ '&quot;,&quot;status&quot;: &quot;Success&quot;']"
+					doc:name="Set Data" />
+				<expression-transformer
+					expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;,&quot;timestamp&quot;: new java.util.Date().toString() , &quot;interface_number&quot;: &quot;&quot;+flowVars.interfaceNumber+&quot;&quot;, &quot;interface_type&quot;: &quot;&quot;+flowVars.interface_type+&quot;&quot;, &quot;requester_ip&quot;:&quot;&quot;+flowVars.ip+&quot;&quot;, &quot;status&quot;: [&quot;code&quot;: &quot;200&quot; , &quot;message&quot;: &quot;Success&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]"
+					doc:name="Build Audit Map" />
+				<vm:outbound-endpoint exchange-pattern="one-way"
+					path="atc.mule.audit" doc:name="VM" />
+				<logger message="#['Data sent for Audit']" level="INFO"
+					doc:name="Info - Log Audit" />
+
+			</otherwise>
+		</choice>
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="ForEachFlow_success_projectStatus">
+
+		<logger
+			message="Inserting the data ::   BATCH_NUMBER------&gt;'#[payload.BATCH_NUMBER]', TT_ID------------&gt;'#[payload.TT_ID]',TT_DATE------------&gt;'#[payload.TT_DATE]'"
+			level="INFO" doc:name="Logger" />
+		<set-variable variableName="TT_ID" value="#[payload.TT_ID]"
+			doc:name="Set TT_ID" />
+		<db:execute-ddl config-ref="Oracle_Configuration" doc:name="Oracle Database">
+            <db:dynamic-query><![CDATA[BEGIN
+MERGE INTO XXATC.ATC_PA_IND_PS_UPD_TT_STG t USING (select 1 from DUAL) s on (t.TT_ID = '#[payload.TT_ID]') WHEN matched THEN
+   UPDATE SET t.BATCH_NUMBER = '#[payload.BATCH_NUMBER]', t.TT_ID_STATUS = '#[payload.TT_ID_STATUS]', 
+   t.TT_DATE =to_date('#[payload.TT_DATE]','yyyy-MM-dd HH24:mi:ss')
+   WHEN NOT matched THEN
+   INSERT 
+   VALUES ('#[payload.BATCH_NUMBER]', '#[payload.TT_ID]', '#[payload.TT_ID_STATUS]',to_date('#[payload.TT_DATE]','yyyy-MM-dd HH24:mi:ss'));
+END;]]></db:dynamic-query>
+
+		</db:execute-ddl>
+		<expression-component doc:name="Add TT_ID in successList"><![CDATA[flowVars.successList.add(flowVars.TT_ID) ;]]></expression-component>
+		<exception-strategy
+			ref="exceptionhandlingChoice_Exception_Strategy_projectStatus"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="ForEachFlow_failure_projectStatus">
+		<db:select config-ref="Oracle_Configuration" doc:name="Oracle Database">
+			<db:dynamic-query><![CDATA[SELECT BATCH_NUMBER,TT_ID,TT_DATE,TT_ID_STATUS FROM XXATC.ATC_PA_IND_PS_UPD_TT_STG_ARC WHERE TT_ID = '#[payload.TT_ID]']]></db:dynamic-query>
+		</db:select>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+		TT_ID: payload01.TT_ID,
+		TT_ID_STATUS: payload01.TT_ID_STATUS,
+		TT_DATE: payload01.TT_DATE as :string {format: "dd-MM-yyyy HH:mm:ss"},
+		BATCH_NUMBER : payload01.BATCH_NUMBER
+		})]]></dw:set-payload>
+		</dw:transform-message>
+		<logger
+			message="Data from Archive for failed record ----------------------------&gt;#[payload[0].TT_ID] #[payload[0].TT_DATE]"
+			level="INFO" doc:name="Logger" />
+		<set-variable variableName="ttId" value="#[payload[0].TT_ID]"
+			doc:name="Variable" />
+
+		<db:insert config-ref="Oracle_Configuration" doc:name="Oracle Database">
+			<db:dynamic-query><![CDATA[INSERT INTO XXATC.ATC_PA_IND_PS_UPD_TT_STG(BATCH_NUMBER,TT_ID, TT_ID_STATUS, TT_DATE) VALUES ('#[payload[0].BATCH_NUMBER]', '#[payload[0].TT_ID]', '#[payload[0].TT_ID_STATUS]',TO_DATE('#[payload[0].TT_DATE]','dd-MM-yyyy HH24:MI:ss'))]]></db:dynamic-query>
+
+
+		</db:insert>
+		<logger
+			message="=================Failed record  &quot;#[flowVars.ttId]&quot; inserted successfully in Success Table====================="
+			level="INFO" doc:name="Logger" />
+		<db:delete config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[delete from XXATC.ATC_TT_FAILEDRECORDS where tt_id = #[flowVars.ttId]]]></db:parameterized-query>
+		</db:delete>
+		<logger
+			message="#[flowVars.ttId] has been successfully deleted from failure table after inserting in Success Table"
+			level="INFO" doc:name="Logger" />
+		<exception-strategy
+			ref="exceptionhandlingChoice_Exception_Strategy_failureRetry"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="retryFailedRecord_projectStatus_httpFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/retry/projstatus" doc:name="HTTP" />
+		<mule-ss:http-security-filter realm="mule-realm" />
+		<flow-ref name="retryFailedRecordFlow_projectStatus"
+			doc:name="Flow Reference" />
+		<set-payload value="#[&quot;Failed records reprocessed&quot;]"
+			doc:name="Set Payload" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+
+	</flow>
+	<flow name="retryFailedRecord_projectStatus_quartzFlow">
+		<quartz:inbound-endpoint jobName="ProjectStatusRetry"
+			cronExpression="${projectstatus_retry.cron.expr}" repeatInterval="0"
+			responseTimeout="10000" doc:name="Quartz">
+			<quartz:event-generator-job />
+		</quartz:inbound-endpoint>
+		<flow-ref name="retryFailedRecordFlow_projectStatus"
+			doc:name="Flow Reference" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="retryFailedRecordFlow_projectStatus">
+		<set-variable variableName="flowName" value="#['TT_PROJ_STATUS']"
+			doc:name="interfaceName" />
+		<db:select config-ref="Oracle_Configuration" doc:name="Database">
+			<db:dynamic-query><![CDATA[select distinct TT_ID from ATC_TT_FAILEDRECORDS where TT_ID != 'null' and FLOW_NAME = '#[flowVars.flowName]' and  retry_count < '3']]></db:dynamic-query>
+		</db:select>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+		TT_ID       			:	(payload01.TT_ID replace "'" with "''") when (payload01.TT_ID != null) otherwise payload01.TT_ID
+	})]]></dw:set-payload>
+		</dw:transform-message>
+		<logger
+			message="List of Project Status records in failed table--------------&gt;#[payload]"
+			level="INFO" doc:name="Logger" />
+		<foreach doc:name="For Each">
+			<flow-ref name="ForEachFlow_failure_projectStatus" doc:name="ForEachFlow_failure_projectStatus" />
+		</foreach>
+	</flow>
+	<flow name="project-status-archive-purge-HTTP">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/purgeArchive/projstatus" doc:name="HTTP" />
+		<mule-ss:http-security-filter realm="mule-realm" />
+		<set-variable variableName="ip"
+			value="#[message.inboundProperties['X-Forwarded-For']]" doc:name="Set ip" />
+		<flow-ref name="project-status-archive-purge-flow"
+			doc:name="Flow Reference project-status-archive-purge-flow" />
+		<logger message="=========Project Status Archive Table Purged=========="
+			level="INFO" doc:name="Logger" />
+		<set-payload
+			value="#[&quot;Archive Table for Project Status Purged Successfully&quot;]"
+			doc:name="Set Payload" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="project-status-archive-purge-quartz">
+		<quartz:inbound-endpoint jobName="ProjectStatusArchivePurge"
+			cronExpression="${archive_purge.cron.expr}" repeatInterval="0"
+			responseTimeout="10000" doc:name="Quartz">
+			<quartz:event-generator-job />
+		</quartz:inbound-endpoint>
+		<flow-ref name="project-status-archive-purge-flow"
+			doc:name="Flow Reference project-status-archive-purge-flow" />
+		<logger message="===========Project Status Archive Table Purged=============="
+			level="INFO" doc:name="Logger" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<sub-flow name="project-status-archive-purge-flow">
+		<set-variable variableName="purgeDate"
+			value="#[server.dateTime.plusMonths(-6).format('dd-MM-yyyy HH:mm:ss')]"
+			doc:name="purgeDate" />
+		<logger message="Purging data older than  :: #[flowVars.purgeDate]"
+			level="INFO" doc:name="Logger" />
+		<db:delete config-ref="Oracle_Configuration" doc:name="Oracle Database">
+			<db:dynamic-query><![CDATA[delete FROM XXATC.ATC_PA_IND_PS_UPD_TT_STG_ARC WHERE created_on < TO_DATE('#[flowVars.purgeDate]','dd-MM-yyyy HH24:MI:ss')]]></db:dynamic-query>
+		</db:delete>
+	</sub-flow>
+
+</mule>

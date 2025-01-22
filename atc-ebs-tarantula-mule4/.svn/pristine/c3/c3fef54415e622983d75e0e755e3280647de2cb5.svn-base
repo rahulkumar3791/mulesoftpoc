@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="ebs-getLandLeaseData-flow" doc:id="4f52da01-54ae-41ba-bc99-547b6057d8bd" >
+		<choice doc:name="Choice" doc:id="eac504a3-d3d3-454c-ba46-dfcbdca3b61c" >
+			<when expression='#[payload != null and payload != ""]'>
+				<set-variable value="#[payload]" doc:name="Set SiteId Value" doc:id="cbe562b3-de9b-4bf9-bf1a-782a6ab6b54d" variableName="siteId"/>
+				<logger level="INFO" doc:name="Log Request Data" doc:id="81a39f85-8712-48df-8591-ac0759ebd4c2" message="#['[GetLandLeaseData][Data Requested for siteId :' ++ write(vars.siteId,'appliction/java') default &quot;&quot; ++ ']']"/>
+				<set-variable value="#[siteId : vars.siteId]" doc:name="Set requestData" doc:id="62d91911-a10c-44d1-93e9-ded8299336ca" variableName="requestData"/>
+				<db:stored-procedure doc:name="Get Land Lease Data" doc:id="83ce2c5f-ede2-4a8a-b09e-fea6655c4e72" config-ref="Oracle_Configuration">
+					<db:sql >call  #[data;resultSet;out] := XXATC.ATC_PN_IND_TT_UTILS_PKG.GET_LAND_LEASE_DATA(:payload)</db:sql>
+				</db:stored-procedure>
+				<set-variable value="#[sizeOf(payload.data)]" doc:name="Set Record Count Value" doc:id="feff963a-468f-4650-95c8-74b1afa0f0cd" variableName="recordCount"/>
+				<choice doc:name="Choice" doc:id="5ad0cdb5-f188-4eee-8773-46d40148427b" >
+					<when expression="#[sizeOf(payload)&gt;0]">
+						<set-payload value="#[payload.data]" doc:name="Set Payload" doc:id="2fdd91ca-ea17-4a90-8347-adf892a4f4ef" />
+						<foreach doc:name="For Each" doc:id="d7097155-9b67-4d88-8f3c-579fbe57a804" >
+							<ee:transform doc:name="Transform Message" doc:id="5b8f745a-d828-4c74-9414-f22951e6567d" >
+								<ee:message >
+									<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map()-> {
+ globalSiteId : payload.GLOBAL_SITE_ID,
+rentAmount : payload.RENT_AMOUNT
+}]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+						</foreach>
+						<logger level="INFO" doc:name="Logger" doc:id="74aba1cc-b7ab-4277-89f5-4a3602b3b10b" message="#['[GetLandLeaseData][Data successfully extracted for siteId : #[siteId] - Count :'++ sizeOf(payload)]"/>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="fd6a9bb1-eb61-4349-aaac-8c167b64bab4" message="####### Get LandLease Data  payload is null #############"/>
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="b9a4ffaf-b374-40b8-a46f-041ade48ff41" message="####### Get LandLeaseData siteId payload is null #############"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

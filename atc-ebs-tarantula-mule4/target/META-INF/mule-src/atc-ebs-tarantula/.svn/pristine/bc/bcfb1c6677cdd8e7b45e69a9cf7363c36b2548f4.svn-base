@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" 
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="purchase-requisition-mailFlow" doc:id="9d06f52c-f47a-49e1-88e7-891240285a6c" >
+		<logger level="INFO" doc:name="Logger" doc:id="a288bbef-3cce-4fae-836e-828dffe73a7f" message="###purchase-requistion flow is started ####"/>
+		<ee:transform doc:name="variable Initialize" doc:id="a746042c-e43e-4698-a4c0-af66a74bb8a0" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="ip" ><![CDATA[server.ip as String default "0.0.0.0"]]></ee:set-variable>
+				<ee:set-variable variableName="flowName" ><![CDATA["TT_PR_DETAILS"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Purchase-Requistion-MainLogicFlow" doc:id="cefd35dd-cdab-4b06-8dbf-4293c9ff70a4" name="Purchase-Requistion-MainLogicFlow" />
+		<logger level="INFO" doc:name="Logger" doc:id="ecad3338-67dd-44ca-ab91-27513062b8c1" message="###purchase-requistion flow is Completed ####"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0face82f-7db4-4bce-9995-ebb6debec773" type="ANY">
+				<set-variable value="#[error.detailedDescription]" doc:name="Set errorMsg" doc:id="4894fdb5-e62b-4e07-bd8d-2f2f3366506b" variableName="errorMsg"/>
+				<logger level="INFO" doc:name="Error Log" doc:id="67e2b8df-8342-4479-bea9-8119b53738d6" message="#[vars.errorMsg]"/>
+				<set-variable value='#["Failed"]' doc:name="Set Status" doc:id="6ba6d45d-fa1a-4b3a-afc1-099b85826a2e" variableName="status"/>
+				<ee:transform doc:name="Email-Audit Payload" doc:id="0b10f922-f7a0-4a4b-8d46-45501cc1b4a0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('interface.id.purchase.requisition') ,
+   "interface_type": p('current.project.type'),
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": vars.status,
+          "error" : vars.errorMsg
+         }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="13755d4f-015f-447c-aa19-9211f8df9607" name="send-email-audit-Flow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="Purchase-Requistion-MainLogicFlow" doc:id="f8dd7cf8-9793-4052-9e9e-7a055df42f1e" >
+		<flow-ref doc:name="ControlFlow-Read-LastRunDateFlow" doc:id="a94fda96-5659-4f46-a02d-fb027445707b" name="ControlFlow-Read-LastRunDateFlow"/>
+		<logger level="INFO" doc:name="Log Reading Data from Oracle" doc:id="c511e5ae-539a-4147-befc-b93e20a6a23d" message="-------------------Reading Purchase Requisition Record Count from Oracle----------------"/>
+		<db:select doc:name="Data Count from Oracle" doc:id="3b91bed5-706f-4d96-814e-db17b01f0c24" config-ref="Oracle_Configuration">
+			<db:sql >SELECT COUNT(*) AS COUNT FROM XXATC.ATC_PO_IND_SVCS_PR_TT_V
+WHERE LAST_UPDATE_DATE &gt; to_date(:lastRunDate,'dd-Mon-yyyy HH24:MI:SS')</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"lastRunDate" : vars.lastRunDate
+}]]]></db:input-parameters>
+		</db:select>
+		<set-variable value="#[payload[0].COUNT]" doc:name="Set recordCount" doc:id="31149285-a3d9-43ed-a58a-ea3132420ec0" variableName="recordCount"/>
+		<logger level="INFO" doc:name="Logger" doc:id="b7885e88-0e71-49ed-893a-5c9e66fe2fff" message='#["-----Number of Purchase Requisition Records =========&gt;" ++ vars.recordCount]'/>
+		<choice doc:name="Choice" doc:id="910b98d0-178f-47d3-ae0d-c2fbe6120492" >
+			<when expression="#[vars.recordCount &gt; 0]">
+				<flow-ref doc:name="Purachese-Requisition-ReadFromOracle-subFlow" doc:id="2371fe09-0bd9-4a76-a900-44ca421caa87" name="Purachese-Requisition-ReadFromOracle-subFlow"/>
+				<flow-ref doc:name="Purchase-Requisition-Get-maxLastRunDateSub_Flow" doc:id="bcd060ff-1d58-4148-9cf9-7dbcd250eddf" name="Purchase-Requisition-Get-maxLastRunDateSub_Flow"/>
+				<flow-ref doc:name="Purchase-Requisition-ControlTable-Update-subFlow" doc:id="73442ce4-522b-4e3d-9caf-72187a96346c" name="ControlTable-Update-subFlow"/>
+				<set-variable value='#["success"]' doc:name="Set Status" doc:id="d2c62da9-277f-4cd2-85d3-02ff528d3af9" variableName="status" />
+				<ee:transform doc:name="Email Audit Payload" doc:id="90f839bb-ee0e-4691-844e-6aa60e2b7f44">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":p('interface.id.purchase.requisition') ,
+   "interface_type": p('current.project.type'),
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": vars.status,
+   	      "flowName": vars.flowName,
+          "recordsProcessed" : vars.totalRecords,
+          "currentLastRunDate" : vars.lastUpdateDate,
+          "batchNumber": vars.batchDetails.batchNumber
+         }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="send-email-audit-Flow" doc:id="5b5a53c4-62a3-48b8-a1ff-c67f395f6ab2" name="send-email-audit-Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Log No updated records" doc:id="e95c7874-f363-4b1d-8050-7a70d9c1f4a7" message="No Updated Records available"/>
+			</otherwise>
+		</choice>
+		<set-variable value='"0"' doc:name="Set flag" doc:id="d2a81637-2232-4ae9-9274-9211f916e216" variableName="flag"/>
+	</flow>
+	<flow name="Purachese-Requisition-ReadFromOracle-subFlow" doc:id="56f0a171-8f27-49de-b6c3-403cfba0cf8f" >
+		<db:select doc:name="Read MAX_LAST_UPDATE_DATE from Oracle" doc:id="3dd23ad7-c8f0-4ffb-bddc-5c2754289dc6" config-ref="Oracle_Configuration">
+			<db:sql >SELECT    to_char(max(LAST_UPDATE_DATE),'yyyy-mm-dd HH24:MI:SS') AS MAX_LAST_UPDATE_DATE FROM XXATC.ATC_PO_IND_SVCS_PR_TT_V</db:sql>
+		</db:select>
+		<set-variable value="#[payload[0].MAX_LAST_UPDATE_DATE]" doc:name="Set MAX_LAST_UPDATE_DATE" doc:id="cebbb635-b3ff-46ba-9945-80b23b5844de" variableName="MAX_LAST_UPDATE_DATE"/>
+		<set-variable value="${purchase.requisition.batch_size}" doc:name="Set BatchSize" doc:id="ca2c0b28-d344-4ead-881c-fe434f375a7b" variableName="batchSize"/>
+		<set-variable value="#[[0]]" doc:name="Set offset" doc:id="1e1f986e-f5ba-478b-b398-d6893999d064" variableName="offset"/>
+		<logger level="INFO" doc:name="Logger" doc:id="509381f0-e7d4-4746-819f-902cdd4dcbb7" message=" ----------------DataSync from Oracle to TT Purchase Requisition----------------------"/>
+		<set-variable value="#[[]]" doc:name="Set listVar" doc:id="8658bf22-fa43-4b1e-ac20-124af1be32cf" variableName="listVar"/>
+		<ee:transform doc:name="Transform Message" doc:id="ecb8c28f-9f7f-45f8-aeee-dd6064c092b4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+
+var loopcount = vars.recordCount as Number
+var batch_size = vars.batchSize as Number
+var dummy = vars.listVar
+fun prepareList(dummy , maxSize: Number) = 
+ if(sizeOf(dummy) >= maxSize ) 
+   dummy 
+ else 
+    prepareList(dummy ++ [(sizeOf(dummy) + 1) as Number],maxSize)
+---
+if( loopcount < batch_size and loopcount != 0) 
+dummy+ 1 default ""
+else
+prepareList([],ceil(loopcount/batch_size))
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[[0]]" doc:name="Set insertRecordCount" doc:id="fa30eac2-9855-4b8a-a852-4818a26583b8" variableName="insertRecordCount"/>
+		<foreach doc:name="For Each" doc:id="4ae4404b-f65b-46cb-9565-0247b721f888" >
+			<logger level="INFO" doc:name="Logger" doc:id="c6096d69-ea3e-4f76-94bc-72610a2d6ec9" message='#["Reading Paginated Purchase Requisition Data  Offset--&gt; " ++ vars.offset]'/>
+			<db:select doc:name="Read Data from Oracle" doc:id="b9641965-6ef7-4b20-aca3-5cafa641d521" config-ref="Oracle_Configuration">
+				<db:sql >SELECT
+    PR.PR_HEADER_ID, 
+    PR.PR_NUMBER,
+    PR.PR_STATUS, 
+    PR.PR_DESCRIPTION,TTID, 
+    PR.PR_LINE_ID,
+    PR.PR_LINE_NUMBER,
+    PR.PR_LINE_STATUS,
+    PR.ITEM_CODE, 
+    PR.ITEM_DESCRIPTION, 
+    DECODE(PR.ITEM_CATEGORY, 'Airconditioner' , DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    'Battery Bank', 
+    DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    'DG',
+    DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    'Shelter' , 
+    DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    'SMPS' , 
+    DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    'TOWER' , 
+    DECODE(LK.ITEM_CODE, null,PR.ITEM_CATEGORY||'-Others',PR.ITEM_CATEGORY),
+    PR.ITEM_CATEGORY) &quot;ITEM_CATEGORY&quot;,
+    PR.UOM_CODE, 
+    to_char(PR.NEED_BY_DATE,'yyyy-mm-dd HH24:MI:SS') &quot;NEED_BY_DATE&quot;,
+    PR.QUANTITY,
+    PRICE, 
+    PR.LINE_VALUE ,
+    PR.PROJECT_NAME,
+    PR.SUPPLIER_NAME,
+    to_char(PR.CREATION_DATE,'yyyy-mm-dd HH24:MI:SS') &quot;CREATION_DATE&quot;,
+    to_char(PR.LAST_UPDATE_DATE,'yyyy-mm-dd HH24:MI:SS') &quot;LAST_UPDATE_DATE&quot;,
+    PR.PO_NUMBER,
+    PR.PO_STATUS,
+    PR.MO_NUMBER, 
+    PR.MO_STATUS
+    FROM XXATC.ATC_PO_IND_SVCS_PR_TT_V PR 
+    LEFT JOIN XXATC.ATC_IND_ITEM_CODE_LOOKUP LK
+    ON PR.ITEM_CODE = LK.ITEM_CODE
+	WHERE PR.LAST_UPDATE_DATE &gt; to_date(:lastRunDate,'dd-Mon-yyyy HH24:MI:SS')
+    ORDER BY PR.PR_HEADER_ID
+    OFFSET :offset ROWS FETCH NEXT :batchSize ROWS ONLY</db:sql>
+				<db:input-parameters ><![CDATA[#[{
+  "lastRunDate" : vars.lastRunDate,
+  "batchSize" : vars.batchSize,
+  "offset" : vars.offset
+  
+}]]]></db:input-parameters>
+			</db:select>
+			<ee:transform doc:name="singleQuoteEscape-Transform Message" doc:id="65754be2-e54b-4f45-b873-797320609242" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(payload01, indx) -> {
+		PR_HEADER_ID		:	if(payload01.PR_HEADER_ID != null)(payload01.PR_HEADER_ID replace "'" with "''")    else payload01.PR_HEADER_ID,
+		PR_NUMBER			: 	if(payload01.PR_NUMBER != null)(payload01.PR_NUMBER replace "'" with "''")    else payload01.PR_NUMBER,
+		PR_STATUS  			:	if(payload01.PR_STATUS != null)(payload01.PR_STATUS replace "'" with "''")  else payload01.PR_STATUS,
+		PR_DESCRIPTION  	:	if(payload01.PR_DESCRIPTION != null)(payload01.PR_DESCRIPTION replace "'" with "''")  else payload01.PR_DESCRIPTION,
+		TTID       			:	if(payload01.TTID != null)(payload01.TTID replace "'" with "''")  else payload01.TTID,
+		PR_LINE_ID 			:	if (payload01.PR_LINE_ID != null)(payload01.PR_LINE_ID replace "'" with "''")  else payload01.PR_LINE_ID,
+		PR_LINE_NUMBER   	:	if (payload01.PR_LINE_NUMBER != null)(payload01.PR_LINE_NUMBER replace "'" with "''")  else payload01.PR_LINE_NUMBER,
+		PR_LINE_STATUS   	:	if (payload01.PR_LINE_STATUS != null) (payload01.PR_LINE_STATUS replace "'" with "''")else payload01.PR_LINE_STATUS,
+		ITEM_CODE  			:	if (payload01.ITEM_CODE != null)(payload01.ITEM_CODE replace "'" with "''")  else payload01.ITEM_CODE,
+		ITEM_DESCRIPTION 	:	if (payload01.ITEM_DESCRIPTION != null)(payload01.ITEM_DESCRIPTION replace "'" with "''")  else payload01.ITEM_DESCRIPTION,
+		ITEM_CATEGORY    	:	if (payload01.ITEM_CATEGORY != null)(payload01.ITEM_CATEGORY replace "'" with "''")  else payload01.ITEM_CATEGORY,
+		UOM_CODE   			:	if (payload01.UOM_CODE != null)(payload01.UOM_CODE replace "'" with "''")  else payload01.UOM_CODE,
+		NEED_BY_DATE     	:	if (payload01.NEED_BY_DATE != null)(payload01.NEED_BY_DATE replace "'" with "''")  else payload01.NEED_BY_DATE,
+		QUANTITY   			:	if (payload01.QUANTITY != null)(payload01.QUANTITY replace "'" with "''")  else payload01.QUANTITY,
+		PRICE      			:	if (payload01.PRICE != null)(payload01.PRICE replace "'" with "''")  else payload01.PRICE,
+		LINE_VALUE 			:	if (payload01.LINE_VALUE != null) (payload01.LINE_VALUE replace "'" with "''") else payload01.LINE_VALUE,
+		PROJECT_NAME		: 	if (payload01.PROJECT_NAME != null)(payload01.PROJECT_NAME replace "'" with "''")  else payload01.PROJECT_NAME,
+		SUPPLIER_NAME    	:	if (payload01.SUPPLIER_NAME != null)(payload01.SUPPLIER_NAME replace "'" with "''")  else payload01.SUPPLIER_NAME,
+		CREATION_DATE    	:	if (payload01.CREATION_DATE != null)(payload01.CREATION_DATE replace "'" with "''")  else payload01.CREATION_DATE,
+		LAST_UPDATE_DATE 	:	if (payload01.LAST_UPDATE_DATE != null)(payload01.LAST_UPDATE_DATE replace "'" with "''")  else payload01.LAST_UPDATE_DATE,
+		PO_NUMBER  			:	if (payload01.PO_NUMBER != null)(payload01.PO_NUMBER replace "'" with "''")  else payload01.PO_NUMBER,
+		PO_STATUS  			:	if (payload01.PO_STATUS != null)(payload01.PO_STATUS replace "'" with "''")  else payload01.PO_STATUS,
+		MO_NUMBER  			:	if (payload01.MO_NUMBER != null)(payload01.MO_NUMBER replace "'" with "''")  else payload01.MO_NUMBER,
+		MO_STATUS  			:	if (payload01.MO_STATUS != null)(payload01.MO_STATUS replace "'" with "''")  else payload01.MO_STATUS
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<ee:transform doc:name="Transform Message" doc:id="53566978-601d-4309-9a6b-8ca8fe9aa398" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map (payload01 , indexOfPayload01) -> {
+		PR_HEADER_ID		:	payload01.PR_HEADER_ID,
+		PR_NUMBER			: 	payload01.PR_NUMBER,
+		PR_STATUS  			:	payload01.PR_STATUS,
+		PR_DESCRIPTION  	:	 if (payload01.PR_DESCRIPTION == null)"''" else "'" ++ payload01.PR_DESCRIPTION ++ "'",
+		TTID       			:	 if (payload01.TTID == null)"''" else "'" ++ payload01.TTID ++ "'",
+		PR_LINE_ID 			:	payload01.PR_LINE_ID,
+		PR_LINE_NUMBER   	:	payload01.PR_LINE_NUMBER,
+		PR_LINE_STATUS   	:	payload01.PR_LINE_STATUS,
+		ITEM_CODE  			:	payload01.ITEM_CODE,
+		ITEM_DESCRIPTION 	:	payload01.ITEM_DESCRIPTION,
+		ITEM_CATEGORY    	:	payload01.ITEM_CATEGORY,
+		UOM_CODE   			:	payload01.UOM_CODE,
+		NEED_BY_DATE     	:	 if (payload01.NEED_BY_DATE == null)"''" else "'" ++ payload01.NEED_BY_DATE ++ "'",
+		QUANTITY   			:	payload01.QUANTITY,
+		PRICE      			:	payload01.PRICE,
+		LINE_VALUE 			:	payload01.LINE_VALUE,
+		PROJECT_NAME		: 	 if (payload01.PROJECT_NAME == null)"NULL"  else "'" ++ payload01.PROJECT_NAME ++ "'",
+		SUPPLIER_NAME    	:	 if (payload01.SUPPLIER_NAME == null)"NULL"  else "'" ++ payload01.SUPPLIER_NAME ++ "'",
+		CREATION_DATE    	:	payload01.CREATION_DATE ,
+		LAST_UPDATE_DATE 	:	payload01.LAST_UPDATE_DATE,
+		PO_NUMBER  			:	 if (payload01.PO_NUMBER == null)"NULL" else "'" ++ payload01.PO_NUMBER ++ "'",
+		PO_STATUS  			:	 if (payload01.PO_STATUS == null)"NULL" else "'" ++ payload01.PO_STATUS ++ "'",
+		MO_NUMBER  			:	 if (payload01.MO_NUMBER == null)"NULL" else "'" ++ payload01.MO_NUMBER ++ "'",
+		MO_STATUS  			:	 if (payload01.MO_STATUS == null)"NULL" else "'" ++ payload01.MO_STATUS ++ "'"
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<flow-ref doc:name="Purachese-Requisition-write-to-TT-subFlow" doc:id="09e351d9-6f86-42df-a82a-6eaa0e545c04" name="Purachese-Requisition-write-to-TT-subFlow"/>
+			<set-variable value="#[vars.counter * vars.batchSize]" doc:name="Set offset" doc:id="608cc60f-c2dc-4fde-b5f5-0773b439602c" variableName="offset" />
+		</foreach>
+		<ee:transform doc:name="Clear Payload" doc:id="e46525e5-625d-4663-97d6-4b0faaba40f6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+null]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="a9cd5b7d-48b2-494b-a212-ead1a683a9b0" message='#["--------------- FetchCount:"++ vars.recordCount ++ " ---------- InsertCount: " ++ vars.insertRecordCount]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="a62d080f-8f3a-42b0-8bfb-22ffa6b87c9c" message=" -------------Purchase Requisition Data Sync Complete------------"/>
+		<remove-variable doc:name="Remove offset" doc:id="5719fe0a-9c8f-44a1-a3e9-a4d740bb8140" variableName="offset"/>
+	</flow>
+	<flow name="Purchase-Requisition-Get-maxLastRunDateSub_Flow" doc:id="cd81cf60-5967-4dfb-a00d-0512f7ec5f6c" >
+		<logger level="INFO" doc:name="Log reading LastRunDate" doc:id="7cdb2c4a-9d1e-4735-b265-2407272d9e5a" message="---------------------Reading max LastRunDate-------------------------"/>
+		<set-variable value="#[vars.MAX_LAST_UPDATE_DATE]" doc:name="Set lastUpdateDate" doc:id="70a37056-d181-4523-89d7-613a1621db15" variableName="lastUpdateDate"/>
+		<set-variable value="#[vars.recordCount]" doc:name="Set totalRecords" doc:id="0beed5ae-b6c8-47c5-afe7-f5b633d914f7" variableName="totalRecords"/>
+		<logger level="INFO" doc:name="Log maxLastUpdatedDate" doc:id="9a5c9b6f-de13-4fd4-acc9-c3dbbb71789b" message='#["maxLastUpdatedDate from TT==&gt;" ++ vars.lastUpdateDate]'/>
+	</flow>
+	<flow name="Purachese-Requisition-write-to-TT-subFlow" doc:id="f01f968a-72bf-4998-a521-70fafdc0546c" >
+		<logger level="INFO" doc:name="Logger" doc:id="89e5db72-4db8-49dd-b188-66618a9c87cb" message='#["Writing Paginated Purchase Requisition data to TT Offset--&gt; " ++ vars.offset]'/>
+		<try doc:name="Try" doc:id="5d015817-e030-4c3f-8a0e-6249582d357b" >
+			<db:insert doc:name="Insert" doc:id="2bed3036-c4a8-4f80-b981-4c31c55ea973" config-ref="SQL_Server_Database_Config">
+				<db:sql >INSERT INTO 
+I_PR_PO(BOQId, PRLineId, PRNumber, PRStatus, PRDescription, TTID, PRLineNumber, PRLineStatus, ItemCode, ItemDescription, ItemName, UOMCode, NeedByDate, Quantity, Price, LineValue, ProjectName, Vendor, PONumber, POStatus, MONumber, MOStatus, CreationDate, LastUpdateDate)
+VALUES (:PR_HEADER_ID,:PR_LINE_ID,:PR_NUMBER,:PR_STATUS,:PR_DESCRIPTION,
+:TTID,:PR_LINE_NUMBER,:PR_LINE_STATUS,:ITEM_CODE,:ITEM_DESCRIPTION,
+:ITEM_CATEGORY,:UOM_CODE,:NEED_BY_DATE,:QUANTITY,:PRICE,:LINE_VALUE,
+:PROJECT_NAME,:SUPPLIER_NAME,:PO_NUMBER,:PO_STATUS,:MO_NUMBER,
+:MO_STATUS,:CREATION_DATE,:LAST_UPDATE_DATE)</db:sql>
+				<db:input-parameters ><![CDATA[#[{
+"PR_HEADER_ID" : payload.PR_HEADER_ID,
+"PR_LINE_ID" : payload.PR_LINE_ID,
+"PR_NUMBER"  : payload.PR_NUMBER,
+"PR_STATUS"  : payload.PR_STATUS,
+"PR_DESCRIPTION" : payload.PR_DESCRIPTION,
+"TTID" : payload.TTID,
+"PR_LINE_NUMBER" : payload.PR_LINE_NUMBER,
+"PR_LINE_STATUS" : payload.PR_LINE_STATUS,
+"ITEM_CODE" : payload.ITEM_CODE,
+"ITEM_DESCRIPTION" : payload.ITEM_DESCRIPTION,
+"ITEM_CATEGORY" : payload.ITEM_CATEGORY,
+"UOM_CODE" : payload.UOM_CODE,
+"NEED_BY_DATE" : payload.NEED_BY_DATE,
+"QUANTITY" : payload.QUANTITY,
+"PRICE" : payload.PRICE,
+"LINE_VALUE" : payload.LINE_VALUE,
+"PROJECT_NAME" : payload.PROJECT_NAME,
+"SUPPLIER_NAME" : payload.SUPPLIER_NAME,
+"PO_NUMBER" : payload.PO_NUMBER,
+"PO_STATUS" : payload.PO_STATUS,
+"MO_NUMBER" : payload.MO_NUMBER,
+"MO_STATUS" : payload.MO_STATUS,
+"CREATION_DATE" : payload.CREATION_DATE,
+"LAST_UPDATE_DATE" : payload.LAST_UPDATE_DATE
+
+}]]]></db:input-parameters>
+			</db:insert>
+			<set-variable value="#[vars.insertRecordCount + sizeOf(payload)]" doc:name="Set insertRecordCount" doc:id="339a74e6-47b7-4ca0-a279-4c4cc4d1b4af" variableName="insertRecordCount"/>
+		</try>
+	</flow>
+</mule>

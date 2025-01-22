@@ -1,0 +1,22 @@
+package com.atc.model.tarantula;
+
+import java.util.List;
+
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement(name = "Reqs")
+public class RequisitionMoveOrderList {
+	
+	List<RequisitionMoveOrder> Req;  
+
+	@XmlElement(name = "Req", type = RequisitionMoveOrder.class) 
+    public List<RequisitionMoveOrder> getReq() {
+		return Req;
+	}
+
+	public void setReq(List<RequisitionMoveOrder> req) {
+		Req = req;
+	}
+
+}

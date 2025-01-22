@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d4d1476d-f07c-45be-9361-a686fa182c5b" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<wsc:config name="Calculator_Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="41a66ad8-a4f0-4966-861d-6249ec74c3ea" >
+		<wsc:connection wsdlLocation="calculator.wsdl" service="Calculator" port="CalculatorSoap" address="http://www.dneonline.com/calculator.asmx" />
+	</wsc:config>
+	<wsc:config name="Country_Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="6f9b7d46-78e3-444f-a647-a0a098199501" >
+		<wsc:connection wsdlLocation="CountryInfoService.wsdl" service="CountryInfoService" port="CountryInfoServiceSoap" address="http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso" />
+	</wsc:config>
+	<wsc:config name="TempConvert_Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="db0c8604-df4c-4c94-a371-466e1ec73e49" >
+		<wsc:connection wsdlLocation="tempconvert.wsdl" service="TempConvert" port="TempConvertSoap" address="http://www.w3schools.com/xml/tempconvert.asmx"/>
+	</wsc:config>
+	<flow name="tempconvert-soap-servicesFlow" doc:id="d71b6cc5-62ef-42e7-8258-c285df9190bf" >
+		<http:listener doc:name="Listener" doc:id="8ac45c60-9211-4237-99ce-3e994c0c496c" config-ref="HTTP_Listener_config" path="/temp"/>
+		<ee:transform doc:name="Transform Message" doc:id="c585c25c-6f80-4830-a429-aeb997a11fad" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output text/xml writeDeclaration=false
+ns soapenv http://schemas.xmlsoap.org/soap/envelope/
+ns ns1 https://www.w3schools.com/xml/
+--- 
+soapenv#Envelope @("xmlns:ns": ns1): {
+    soapenv#Header:{},
+	soapenv#Body: {
+		"ns:CelsiusToFahrenheit": {
+			"ns:Celsius": "34"
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="81f4f37b-26f0-470b-80b3-342fb8da1d91" config-ref="TempConvert_Web_Service_Consumer_Config" operation="CelsiusToFahrenheit"/>
+		<ee:transform doc:name="Transform Message" doc:id="cfb6aaf0-c6b8-4214-b89d-92bc1f92bf76" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="countryInfo-soap-servicesFlow" doc:id="cfd2916a-e28e-4c2d-b5e3-738a678f0851" >
+		<http:listener doc:name="Listener" doc:id="de4ece8c-54cd-4628-88ac-3d167ecd7555" config-ref="HTTP_Listener_config" path="/country"/>
+		<ee:transform doc:name="Transform Message" doc:id="4cad3275-b0ad-4d95-8044-df1a4341f07e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output text/xml writeDeclaration=false
+ns soap http://www.w3.org/2003/05/soap-envelope
+ns ns1 http://www.oorsprong.org/websamples.countryinfo
+--- 
+soap#Envelope @("xmlns:web": ns1): {
+    soap#Header:{},
+	soap#Body: {
+		"web:CountryName": {
+			"web:sCountryISOCode":"US"
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="512c7ce3-ac5e-4fbe-bc18-c645923966b4" config-ref="Country_Web_Service_Consumer_Config" operation="CountryName"/>
+		<ee:transform doc:name="Transform Message" doc:id="304ef876-8a6e-44fe-89b8-3b537f76f69d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="calculator-soap-servicesFlow" doc:id="ac11444c-d90e-4448-abc8-84a45f744d72" >
+		<http:listener doc:name="Listener" doc:id="63fe16d7-81d6-4d06-89bd-6f2526dd8cc7" path="/soap" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="0d67b49e-3fd3-463e-b193-7bb3262ffdbf" message="-----soap web service consuming------"/>
+		<ee:transform doc:name="Transform Message" doc:id="b923fe18-343b-4069-a64c-ef2b7a5de13d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output text/xml
+ns soapenv http://schemas.xmlsoap.org/soap/envelope/
+ns ns1 http://tempuri.org/
+--- 
+soapenv#Envelope @("xmlns:tem": ns1): {
+    soapenv#Header:{},
+	soapenv#Body: {
+		"tem:Add": {
+			"tem:intA": "100",
+			"tem:intB": "6"
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="526e8612-183d-4f0a-a8d6-1c3a4b987859" config-ref="Calculator_Web_Service_Consumer_Config" operation="Add"/>
+		<ee:transform doc:name="Transform Message" doc:id="446c7a25-b5c3-4638-a5d0-20010c366db2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

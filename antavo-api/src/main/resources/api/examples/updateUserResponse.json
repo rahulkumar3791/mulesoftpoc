@@ -1,0 +1,13 @@
+{
+    "id": "test_account1",
+    "created_at": 1615235020,
+    "email": "testaccount1@gmail.com",
+    "first_name": "RajaramTest",
+    "last_name": "PasupathyTest",
+    "status": "active",
+    "score": 0,
+    "spent": 0,
+    "pending": 0,
+    "image_url": null,
+    "events": []
+}

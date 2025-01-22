@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bb7a7f8b-f8d6-4ee5-ac6b-9ac61956e003" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="d7fef73f-ae80-4846-990d-af49657444f8" />
+	<flow name="file-lockFlow" doc:id="b8037c37-d556-4578-a1a6-a3c5744b3e30" >
+		<http:listener doc:name="Listener" doc:id="c788b77e-1f73-41c3-b11b-8d14ee34820c" path="/filelock" config-ref="HTTP_Listener_config"/>
+		<file:read doc:name="Read" doc:id="8e31e499-5731-452b-8683-7f80ec09e8f7" config-ref="File_Config" path='D:\workspace-zenni\file-lock\src\main\resources\test.txt' lock="true"/>
+		<ee:transform doc:name="Transform Message" doc:id="f94d39c5-7cb0-41bf-9d6b-e58c8adaef47" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "File is lock",
+	"content" : payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

@@ -1,0 +1,172 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: post-blog-api
+  contact:
+    email: rahuk@gmail.com
+    name: Rahul
+    url: http://www.rahul.com/contacts
+  termsOfService: http://www.rahul.com/tnc
+  description: This APIs is related to the Blog Post.
+
+servers:
+  - url: https://{environment}.example.com/api/v1
+    variables:
+      environment:
+        default: api
+        enum:
+          - api
+          - api-stag
+          - api-dev
+          - api-uat
+
+paths: 
+  /posts:
+    description: This is used to create or retrieve the post
+    get:
+      security:
+        - ClientId: []
+          ClientSecret: []
+      description: This used to retrieve all the post
+      parameters: 
+        - $ref: "#/components/parameters/correlationHeader"
+        - $ref: "#/components/parameters/transactionHeader"
+        - $ref: "#/components/parameters/fromDateQuery"
+        - $ref: "#/components/parameters/toDateQuery"
+          
+      responses:
+        "200":
+          description: Success Response for Post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Posts"
+                
+    post:
+      description: This used to create post.
+      security:
+        - JWTToken: []  
+      parameters:
+        - $ref: "#/components/parameters/correlationHeader"
+        - $ref: "#/components/parameters/transactionHeader"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Post"
+      responses:
+        "201":
+          description: "Post Created"
+          content:
+            application/json:
+              schema:
+                description: "Post Created"
+    
+  /posts/{id}:
+    description: This is used to retrieve or delete single post
+    get:
+      security:
+        - ClientId: []
+          ClientSecret: []
+      parameters:
+        - $ref: "#/components/parameters/idPath"
+        - $ref: "#/components/parameters/correlationHeader"
+        - $ref: "#/components/parameters/transactionHeader"
+ 
+          
+      description: This is used to retrieve single post
+      responses:
+        "200":
+          description: "Success Response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+            
+    delete:
+      security:
+        - JWTToken: [] 
+      description: This is used to delete the post
+      parameters:
+        - $ref: "#/components/parameters/idPath"
+        - $ref: "#/components/parameters/correlationHeader"
+        - $ref: "#/components/parameters/transactionHeader"
+      responses:
+        "204":
+          description: "Post Deleted"
+          content:
+            application/json:
+              schema:
+                description: "Post deleted"         
+components:  
+  securitySchemes:
+    ClientId:
+      type: apiKey
+      in: header
+      name: client_id
+    ClientSecret:
+      type: apiKey
+      in: header
+      name: client_secret
+    JWTToken:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+
+  parameters:
+    idPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    correlationHeader:
+      in: header
+      name: X-CORRELATION-ID
+      required: true
+      schema:
+        type: string
+    transactionHeader:
+      in: header
+      name: X-TRANSACTION-ID
+      required: true
+      schema:
+        type: string
+    fromDateQuery:
+      in: query
+      name: from-date
+      schema:
+        type: string
+    toDateQuery:
+      in: query
+      name: to-date
+      schema:
+        type: string
+        
+  schemas:
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123"
+        title:
+          type: string
+          example: "MuleSoft Introduction"
+        body:
+          type: string
+          example: "This is MuleSoft Introduction"
+        type:
+          type: string
+          example: "Technical"
+      required: 
+        - id
+        - title
+        - body
+        - type
+    Posts:
+      type: array
+      items:
+        $ref: "#/components/schemas/Post"  
+    
+ 

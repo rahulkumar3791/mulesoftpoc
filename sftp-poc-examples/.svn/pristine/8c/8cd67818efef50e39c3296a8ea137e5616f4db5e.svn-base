@@ -1,0 +1,67 @@
+env=prod
+cloudhub.env=production
+current.environment=PROD
+current.project.name=Feeds-Serengeti
+serengeti.payment.current.project.id=I-0120
+serengeti.invoice.current.project.id=I-0121
+current.project.type=SFTP
+
+https.host=0.0.0.0
+https.port=8081
+https.username = (OPS-TEAM)
+https.password = (OPS-TEAM)
+
+tls.key.password = atcmule01
+tls.store.password = atcmule01
+
+atc.oracle.sftp.server.host=oraprdusdb1.americantower.com
+atc.oracle.sftp.server.port=22
+atc.oracle.sftp.server.user=OPS-TEAM
+atc.oracle.sftp.server.password=OPS-TEAM
+atc.oracle.sftp.server.outboundPath=/usprdSHR/DATA/MULE/AP/SERENGETI/OUT
+atc.oracle.sftp.server.inboundPath=/usprdSHR/DATA/MULE/AP/SERENGETI/IN
+atc.oracle.sftp.server.archiveEnable=true
+atc.oracle.sftp.server.archivePath=/usprdSHR/DATA/MULE/AP/SERENGETI/ARCHIVE
+atc.oracle.sftp.server.fileNameFilter=*.csv
+
+
+atc.aws.sftp.server.host=172.20.2.101
+atc.aws.sftp.server.port=22
+atc.aws.sftp.server.user=OPS-TEAM
+atc.aws.sftp.server.password=OPS-TEAM
+atc.aws.sftp.server.outboundPath=/data/prd
+atc.aws.sftp.server.inboundPath=/data/prd
+atc.aws.sftp.server.archiveEnable=true
+atc.aws.sftp.server.archivePath=/data/prd/Archive
+atc.aws.sftp.server.fileNameFilter=*COR AP Route*
+
+
+
+ws.url =https://us.legaltrackerservices.thomsonreuters.com/APDataExchange.svc?WSDL
+ws.service=TAPDataExchangeWebService
+ws.port=APDataExchangeBasic
+ws.address=https://us.legaltrackerservices.thomsonreuters.com/APDataExchange.svc/APDataExchangeBasic
+ws.user=OPS-TEAM
+ws.password=OPS-TEAM
+ws.formatdate=dd-MMM-yy
+ws.fileDelimiter=Comma
+
+serengeti.payment.cron.expression=0 0/5 * * * ?
+serengeti.invoice.cron.expression=0 0/5 * * * ?
+
+audit.email.db.host=fmw-prd-db.americantower.com
+audit.email.db.port=1552
+audit.email.db.user=OPS-TEAM
+audit.email.db.sid=FMWPRD
+audit.email.db.password=OPS-TEAM
+
+to.sftp.email=Application.Admins@AmericanTower.com;MuleIntegrationTeam@americantower.com;Satyakanth.Abbaraju@AmericanTower.com
+success.mail.enable=true
+
+sftp.response.timeout=60000
+source.atc.maxConnectionPoolSize=1
+
+success.delivery.required=N
+failed.delivery.required=Y
+
+

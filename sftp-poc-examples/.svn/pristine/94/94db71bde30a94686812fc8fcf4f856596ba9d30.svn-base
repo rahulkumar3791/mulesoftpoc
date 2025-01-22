@@ -1,0 +1,67 @@
+env=uat
+cloudhub.env=uat
+current.environment=UAT
+current.project.name=Feeds-Serengeti
+serengeti.payment.current.project.id=I-0120
+serengeti.invoice.current.project.id=I-0121
+current.project.type=SFTP
+
+https.host=0.0.0.0
+https.port=8081
+https.username = (OPS-TEAM)
+https.password = (OPS-TEAM)
+
+tls.key.password = atcmule01
+tls.store.password = atcmule01
+
+atc.oracle.sftp.server.host=oradevusdb1.americantower.com
+atc.oracle.sftp.server.port=22
+atc.oracle.sftp.server.user=OPS-TEAM
+atc.oracle.sftp.server.password=OPS-TEAM
+atc.oracle.sftp.server.outboundPath=/usuatSHR/DATA/MULE/AP/SERENGETI/OUT
+atc.oracle.sftp.server.inboundPath=/usuatSHR/DATA/MULE/AP/SERENGETI/IN
+atc.oracle.sftp.server.archiveEnable=true
+atc.oracle.sftp.server.archivePath=/usuatSHR/DATA/MULE/AP/SERENGETI/ARCHIVE
+atc.oracle.sftp.server.fileNameFilter=*.csv
+
+
+atc.aws.sftp.server.host=172.20.2.101
+atc.aws.sftp.server.port=22
+atc.aws.sftp.server.user=OPS-TEAM
+atc.aws.sftp.server.password=OPS-TEAM
+atc.aws.sftp.server.outboundPath=/data/dev
+atc.aws.sftp.server.inboundPath=
+atc.aws.sftp.server.archiveEnable=true
+atc.aws.sftp.server.archivePath=/data/dev/Archive
+atc.aws.sftp.server.fileNameFilter=*TEST*
+
+
+
+ws.url =https://us.legaltrackerservices.thomsonreuters.com/APDataExchange.svc?WSDL
+ws.service=TAPDataExchangeWebService
+ws.port=APDataExchangeBasic
+ws.address=https://us.legaltrackerservices.thomsonreuters.com/APDataExchange.svc/APDataExchangeBasic
+ws.user=OPS-TEAM
+ws.password=OPS-TEAM
+ws.formatdate=dd-MMM-yy
+ws.fileDelimiter=Comma
+
+serengeti.payment.cron.expression=0 0/20 * 1/1 * ? *
+serengeti.invoice.cron.expression=0 0/20 * 1/1 * ? *
+
+audit.email.db.host=fmw-uat-db.americantower.com
+audit.email.db.port=1566
+audit.email.db.user=OPS-TEAM
+audit.email.db.sid=FMWUAT
+audit.email.db.password=OPS-TEAM
+
+to.sftp.email=anjana.tripathi@americantower.com;Harsha.Pateelu@AmericanTower.com;Satyakanth.Abbaraju@AmericanTower.com;Sireesha.Kalluru@AmericanTower.com
+success.mail.enable=true
+
+sftp.response.timeout=60000
+source.atc.maxConnectionPoolSize=1
+
+success.delivery.required=Y
+failed.delivery.required=Y
+
+

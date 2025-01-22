@@ -1,0 +1,70 @@
+smtp.to = MuleIntegrationTeam@americantower.com
+tls.key.password = atcmule01
+tls.store.password = atcmule01
+interface.type=HTTP
+interface.id.project.status=I-0356
+interface.id.project.site=I-0355
+interface.id.purchase.requisition=I-0357
+interface.id.project.status.ttid=I-0360
+interface.id.project.site.ttid=I-0359
+interface.id.purchase.requisition.ttid=I-0358
+jdbc.source.server.host = 10.202.10.53 
+jdbc.source.server.port = 1537
+jdbc.source.server.user = xxatc
+jdbc.source.server.password = xxatc01
+jdbc.source.server.instance = GBDEV
+poll.projects.frequency = 300000000
+https.port = 8081
+https.username = erich
+https.password = temp1
+ebs.we.maxRecords = 10
+quartz.delete.data.corn.expression = 0 57 10 ? * 6
+atc.core.host = atc-core-qc.cloudhub.io
+atc.core.port = 443
+atc.core.user = core-mule-qc
+atc.core.password = qcPassword01
+jdbc.colo.host.dev = 10.1.40.12
+jdbc.colo.host.qc = 10.1.60.12
+ebs.tarantula.maxRecords = 10
+## -----Nov 25,2015 -----####
+current.environment = Local
+current.projectname = Atc-Tarantula
+## -----DEC 08,2015 -----####
+vendor.mail.enable=true
+smtp.to.ops=shruti.gupta@americantower.com
+smtp.to.business=shruti.gupta@americantower.com
+######
+#EBS-TT Oracle and Tarantula Interface Properties#
+cron.schedule=OFF
+projectstatus.cron.expr= 0 15 10 15 * ? 
+purchaserequisition.cron.expr= 0 15 10 15 * ?
+projectcreation.cron.expr= 0 15 10 15 * ?
+projectstatus_retry.cron.expr= 0 15 10 15 * ? 
+purchaserequisition_retry.cron.expr= 0 15 10 15 * ?
+projectcreation_retry.cron.expr= 0 15 10 15 * ?
+archive_purge.cron.expr= 0 15 10 15 * ?
+db.host=10.202.10.53
+db.port=1537
+db.instance=GBDEV
+db.user=xxatc
+db.password=xxatc01
+emailID=MuleIntegrationTeam@americantower.com
+#sql.server credentials below point to UAT ~ Dev/QC Details to be received
+sql.server.dbName=SSATCInterface
+sql.server.port=1433
+sql.server.ip=10.200.81.76
+sql.server.user=newmule
+sql.server.password=newmule@123
+https.host=0.0.0.0
+#To enable debug mode for Bulk Loading
+purchaserequisition.debug=true
+projectstatus.debug=true
+projectsite.debug=true
+url.healthCheck=/api/rest/health
+url.getControlTable=/getInterfaceDetails
+url.postControlTable=/postInterfaceDetails
+interface.id.project.site=I-0355
+interface.type=HTTP
+interface.id.project.site.ttid=I-0359
+interface.id.project.status.ttid=I-0360
+interface.id.purchase.requisition.ttid=I-0358

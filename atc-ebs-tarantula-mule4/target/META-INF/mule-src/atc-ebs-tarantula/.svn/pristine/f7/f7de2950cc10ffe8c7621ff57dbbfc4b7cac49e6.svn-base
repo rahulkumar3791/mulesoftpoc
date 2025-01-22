@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><Graph __version="3.5.0" author="kenny.zhang" created="Tue Dec 08 08:38:35 CST 2015" description="Map To Pojo" guiVersion="3.4.4.P" id="1449548081910" licenseCode="Unlicensed" licenseType="Unknown" modified="Tue Dec 08 08:38:35 CST 2015" modifiedBy="kenny.zhang" name="Map_To_Pojo" revision="1.0" showComponentDetails="false">
+<Global>
+<Metadata __index="0" __referenceCounter="1" __sourcePath="{}/Map" _dataStructure="SINGLE_DIMENSIONAL_COLLECTION" _id="__id" _type="Input" id="58ec78f1-6e7d-476a-b05d-1a9de2bc9e0f">
+<Record fieldDelimiter="," name="Map" recordDelimiter="\n\\|\r\n\\|\r" type="delimited">
+<Field __artificialType="_id" __systemManaged="true" name="__id" type="string"/>
+<Field __index="6" __sourcePath="{}/Map/ADDRESS_x005fLINE1" containerType="SINGLE" label="ADDRESS_LINE1" name="ADDRESS_LINE1" type="string"/>
+<Field __index="7" __sourcePath="{}/Map/ADDRESS_x005fLINE2" containerType="SINGLE" label="ADDRESS_LINE2" name="ADDRESS_LINE2" type="string"/>
+<Field __index="8" __sourcePath="{}/Map/ADDRESS_x005fLINE3" containerType="SINGLE" label="ADDRESS_LINE3" name="ADDRESS_LINE3" type="string"/>
+<Field __index="4" __sourcePath="{}/Map/CIRCLE" containerType="SINGLE" label="CIRCLE" name="CIRCLE" type="string"/>
+<Field __index="9" __sourcePath="{}/Map/CITY" containerType="SINGLE" label="CITY" name="CITY" type="string"/>
+<Field __index="16" __sourcePath="{}/Map/EMAIL_x005fADDRESS" containerType="SINGLE" label="EMAIL_ADDRESS" name="EMAIL_ADDRESS" type="string"/>
+<Field __index="3" __sourcePath="{}/Map/END_x005fDATE_x005fACTIVE" containerType="SINGLE" label="END_DATE_ACTIVE" name="END_DATE_ACTIVE" type="string"/>
+<Field __index="13" __sourcePath="{}/Map/FIRST_x005fNAME" containerType="SINGLE" label="FIRST_NAME" name="FIRST_NAME" type="string"/>
+<Field __index="15" __sourcePath="{}/Map/LAST_x005fNAME" containerType="SINGLE" label="LAST_NAME" name="LAST_NAME" type="string"/>
+<Field __index="14" __sourcePath="{}/Map/MIDDLE_x005fNAME" containerType="SINGLE" label="MIDDLE_NAME" name="MIDDLE_NAME" type="string"/>
+<Field __index="17" __sourcePath="{}/Map/PHONE" containerType="SINGLE" label="PHONE" name="PHONE" type="string"/>
+<Field __index="12" __sourcePath="{}/Map/PREFIX" containerType="SINGLE" label="PREFIX" name="PREFIX" type="string"/>
+<Field __index="2" __sourcePath="{}/Map/START_x005fDATE_x005fACTIVE" containerType="SINGLE" label="START_DATE_ACTIVE" name="START_DATE_ACTIVE" type="string"/>
+<Field __index="10" __sourcePath="{}/Map/STATE" containerType="SINGLE" label="STATE" name="STATE" type="string"/>
+<Field __index="0" __sourcePath="{}/Map/VENDOR_x005fCODE" containerType="SINGLE" label="VENDOR_CODE" name="VENDOR_CODE" type="string"/>
+<Field __index="1" __sourcePath="{}/Map/VENDOR_x005fNAME" containerType="SINGLE" label="VENDOR_NAME" name="VENDOR_NAME" type="string"/>
+<Field __index="5" __sourcePath="{}/Map/VENDOR_x005fSITE_x005fCODE" containerType="SINGLE" label="VENDOR_SITE_CODE" name="VENDOR_SITE_CODE" type="string"/>
+<Field __index="18" __sourcePath="{}/Map/VENDOR_x005fTYPE" containerType="SINGLE" label="VENDOR_TYPE" name="VENDOR_TYPE" type="string"/>
+<Field __index="11" __sourcePath="{}/Map/ZIP" containerType="SINGLE" label="ZIP" name="ZIP" type="string"/>
+</Record>
+</Metadata>
+<Metadata __index="0" __referenceCounter="1" __sourcePath="{}/object/vendor" _dataStructure="SINGLE_DIMENSIONAL_COLLECTION" _id="__id" _metadataParentId="dad375e5-a71b-4541-8015-aff320b6b7b3" _parent_id="__parent_id" _type="Output" id="5a6a8f1b-ac61-4a37-9ae0-cae98d30d1c6">
+<Record fieldDelimiter="," name="vendor" recordDelimiter="\n\\|\r\n\\|\r" type="delimited">
+<Field __artificialType="_parent_id" __systemManaged="true" name="__parent_id" type="string"/>
+<Field __artificialType="_id" __systemManaged="true" name="__id" type="string"/>
+<Field __index="0" __sourcePath="{}/object/vendor/addressLine1" containerType="SINGLE" label="addressLine1" name="addressLine1" type="string"/>
+<Field __index="1" __sourcePath="{}/object/vendor/addressLine2" containerType="SINGLE" label="addressLine2" name="addressLine2" type="string"/>
+<Field __index="2" __sourcePath="{}/object/vendor/addressLine3" containerType="SINGLE" label="addressLine3" name="addressLine3" type="string"/>
+<Field __index="3" __sourcePath="{}/object/vendor/circle" containerType="SINGLE" label="circle" name="circle" type="string"/>
+<Field __index="4" __sourcePath="{}/object/vendor/city" containerType="SINGLE" label="city" name="city" type="string"/>
+<Field __index="5" __sourcePath="{}/object/vendor/emailAddress" containerType="SINGLE" label="emailAddress" name="emailAddress" type="string"/>
+<Field __index="6" __sourcePath="{}/object/vendor/endDateActive" containerType="SINGLE" label="endDateActive" name="endDateActive" type="string"/>
+<Field __index="7" __sourcePath="{}/object/vendor/firstName" containerType="SINGLE" label="firstName" name="firstName" type="string"/>
+<Field __index="8" __sourcePath="{}/object/vendor/lastName" containerType="SINGLE" label="lastName" name="lastName" type="string"/>
+<Field __index="9" __sourcePath="{}/object/vendor/middleName" containerType="SINGLE" label="middleName" name="middleName" type="string"/>
+<Field __index="10" __sourcePath="{}/object/vendor/phone" containerType="SINGLE" label="phone" name="phone" type="string"/>
+<Field __index="11" __sourcePath="{}/object/vendor/prefix" containerType="SINGLE" label="prefix" name="prefix" type="string"/>
+<Field __index="12" __sourcePath="{}/object/vendor/startDateActive" containerType="SINGLE" label="startDateActive" name="startDateActive" type="string"/>
+<Field __index="13" __sourcePath="{}/object/vendor/state" containerType="SINGLE" label="state" name="state" type="string"/>
+<Field __index="14" __sourcePath="{}/object/vendor/vendorCode" containerType="SINGLE" label="vendorCode" name="vendorCode" type="string"/>
+<Field __index="15" __sourcePath="{}/object/vendor/vendorName" containerType="SINGLE" label="vendorName" name="vendorName" type="string"/>
+<Field __index="16" __sourcePath="{}/object/vendor/vendorSiteCode" containerType="SINGLE" label="vendorSiteCode" name="vendorSiteCode" type="string"/>
+<Field __index="17" __sourcePath="{}/object/vendor/vendorType" containerType="SINGLE" label="vendorType" name="vendorType" type="string"/>
+<Field __index="18" __sourcePath="{}/object/vendor/zip" containerType="SINGLE" label="zip" name="zip" type="string"/>
+</Record>
+</Metadata>
+<Metadata __index="0" __referenceCounter="0" __sourcePath="{}/object" _dataStructure="OBJECT" _id="__id" _type="Output" id="dad375e5-a71b-4541-8015-aff320b6b7b3">
+<Record fieldDelimiter="," name="Vendors" recordDelimiter="\n\\|\r\n\\|\r" type="delimited">
+<Field __artificialType="_id" __systemManaged="true" name="__id" type="string"/>
+</Record>
+</Metadata>
+<Dictionary>
+<Entry id="DictionaryEntry0" input="true" name="inputPayload" output="false" type="object"/>
+<Entry id="DictionaryEntry1" input="false" name="outputPayload" output="true" type="object"/>
+</Dictionary>
+</Global>
+<Phase number="0">
+<Node enabled="enabled" fileURL="dict:inputPayload" guiName="Map&lt;k,v&gt; READER" guiX="20" guiY="20" id="BEAN_READER0" type="BEAN_READER">
+<attr name="mapping"><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Context outPort="0" sequenceField="__id" xpath=".">
+  <Mapping cloverField="ADDRESS_LINE1" trim="true" xpath="ADDRESS_x005fLINE1"/>
+  <Mapping cloverField="ADDRESS_LINE2" trim="true" xpath="ADDRESS_x005fLINE2"/>
+  <Mapping cloverField="ADDRESS_LINE3" trim="true" xpath="ADDRESS_x005fLINE3"/>
+  <Mapping cloverField="CIRCLE" trim="true" xpath="CIRCLE"/>
+  <Mapping cloverField="CITY" trim="true" xpath="CITY"/>
+  <Mapping cloverField="EMAIL_ADDRESS" trim="true" xpath="EMAIL_x005fADDRESS"/>
+  <Mapping cloverField="END_DATE_ACTIVE" trim="true" xpath="END_x005fDATE_x005fACTIVE"/>
+  <Mapping cloverField="FIRST_NAME" trim="true" xpath="FIRST_x005fNAME"/>
+  <Mapping cloverField="LAST_NAME" trim="true" xpath="LAST_x005fNAME"/>
+  <Mapping cloverField="MIDDLE_NAME" trim="true" xpath="MIDDLE_x005fNAME"/>
+  <Mapping cloverField="PHONE" trim="true" xpath="PHONE"/>
+  <Mapping cloverField="PREFIX" trim="true" xpath="PREFIX"/>
+  <Mapping cloverField="START_DATE_ACTIVE" trim="true" xpath="START_x005fDATE_x005fACTIVE"/>
+  <Mapping cloverField="STATE" trim="true" xpath="STATE"/>
+  <Mapping cloverField="VENDOR_CODE" trim="true" xpath="VENDOR_x005fCODE"/>
+  <Mapping cloverField="VENDOR_NAME" trim="true" xpath="VENDOR_x005fNAME"/>
+  <Mapping cloverField="VENDOR_SITE_CODE" trim="true" xpath="VENDOR_x005fSITE_x005fCODE"/>
+  <Mapping cloverField="VENDOR_TYPE" trim="true" xpath="VENDOR_x005fTYPE"/>
+  <Mapping cloverField="ZIP" trim="true" xpath="ZIP"/>
+</Context>
+]]></attr>
+<attr name="_data_format"><![CDATA[MAP]]></attr>
+</Node>
+<Node cacheInMemory="true" enabled="enabled" fileURL="dict:outputPayload" guiName="Pojo WRITER" guiX="900" guiY="20" id="BEAN_WRITER0" type="BEAN_WRITER">
+<attr name="mapping"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<object xmlns:clover="http://www.cloveretl.com/ns/xmlmapping">
+  <clover:collection clover:name="vendor">
+    <item clover:inPort="0">
+      <addressLine1>$0.addressLine1</addressLine1>
+      <addressLine2>$0.addressLine2</addressLine2>
+      <addressLine3>$0.addressLine3</addressLine3>
+      <circle>$0.circle</circle>
+      <city>$0.city</city>
+      <emailAddress>$0.emailAddress</emailAddress>
+      <endDateActive>$0.endDateActive</endDateActive>
+      <firstName>$0.firstName</firstName>
+      <lastName>$0.lastName</lastName>
+      <middleName>$0.middleName</middleName>
+      <phone>$0.phone</phone>
+      <prefix>$0.prefix</prefix>
+      <startDateActive>$0.startDateActive</startDateActive>
+      <state>$0.state</state>
+      <vendorCode>$0.vendorCode</vendorCode>
+      <vendorName>$0.vendorName</vendorName>
+      <vendorSiteCode>$0.vendorSiteCode</vendorSiteCode>
+      <vendorType>$0.vendorType</vendorType>
+      <zip>$0.zip</zip>
+    </item>
+  </clover:collection>
+</object>]]></attr>
+<attr name="_data_format"><![CDATA[JAVA]]></attr>
+<attr name="schema"><![CDATA[<?xml version="1.0" encoding="UTF-8"?><schema-object>
+  <typed-object-ref type-ref="com.atc.model.tarantula.Vendors"/>
+  <typed-object type="com.atc.model.tarantula.Vendor">
+    <typed-object-ref name="addressLine1" type-ref="java.lang.String"/>
+    <typed-object-ref name="addressLine2" type-ref="java.lang.String"/>
+    <typed-object-ref name="addressLine3" type-ref="java.lang.String"/>
+    <typed-object-ref name="circle" type-ref="java.lang.String"/>
+    <typed-object-ref name="city" type-ref="java.lang.String"/>
+    <typed-object-ref name="emailAddress" type-ref="java.lang.String"/>
+    <typed-object-ref name="endDateActive" type-ref="java.lang.String"/>
+    <typed-object-ref name="firstName" type-ref="java.lang.String"/>
+    <typed-object-ref name="lastName" type-ref="java.lang.String"/>
+    <typed-object-ref name="middleName" type-ref="java.lang.String"/>
+    <typed-object-ref name="phone" type-ref="java.lang.String"/>
+    <typed-object-ref name="prefix" type-ref="java.lang.String"/>
+    <typed-object-ref name="startDateActive" type-ref="java.lang.String"/>
+    <typed-object-ref name="state" type-ref="java.lang.String"/>
+    <typed-object-ref name="vendorCode" type-ref="java.lang.String"/>
+    <typed-object-ref name="vendorName" type-ref="java.lang.String"/>
+    <typed-object-ref name="vendorSiteCode" type-ref="java.lang.String"/>
+    <typed-object-ref name="vendorType" type-ref="java.lang.String"/>
+    <typed-object-ref name="zip" type-ref="java.lang.String"/>
+  </typed-object>
+  <typed-object type="java.lang.String"/>
+  <typed-object type="com.atc.model.tarantula.Vendors">
+    <schema-collection name="vendor" type="java.util.List">
+      <typed-object-ref type-ref="com.atc.model.tarantula.Vendor"/>
+    </schema-collection>
+  </typed-object>
+</schema-object>
+]]></attr>
+</Node>
+<Node enabled="enabled" guiName="Foreach 'Map' -&gt; 'vendor'" guiX="460" guiY="20" id="FOREACH_MAP_VENDOR" transformClass="com.mulesoft.datamapper.transform.MelRecordTransform" type="REFORMAT">
+<attr name="melScript"><![CDATA[//MEL
+//START -> DO NOT REMOVE
+output.__id = input.__id;
+output.__parent_id = input.__id;
+//END -> DO NOT REMOVE
+output.circle = input.CIRCLE;
+output.city = input.CITY;
+output.phone = input.PHONE;
+output.prefix = input.PREFIX;
+output.state = input.STATE;
+output.zip = input.ZIP;
+output.addressLine1 = input.ADDRESS_LINE1;
+output.addressLine2 = input.ADDRESS_LINE2;
+output.addressLine3 = input.ADDRESS_LINE3;
+output.emailAddress = input.EMAIL_ADDRESS;
+output.endDateActive = input.END_DATE_ACTIVE;
+output.firstName = input.FIRST_NAME;
+output.lastName = input.LAST_NAME;
+output.middleName = input.MIDDLE_NAME;
+output.startDateActive = input.START_DATE_ACTIVE;
+output.vendorCode = input.VENDOR_CODE;
+output.vendorName = input.VENDOR_NAME;
+output.vendorSiteCode = input.VENDOR_SITE_CODE;
+output.vendorType = input.VENDOR_TYPE;]]></attr>
+</Node>
+<Edge debugMode="true" fromNode="BEAN_READER0:0" guiBendpoints="" id="Edge0" inPort="Port 0 (in)" metadata="58ec78f1-6e7d-476a-b05d-1a9de2bc9e0f" outPort="Port 0 (out)" toNode="FOREACH_MAP_VENDOR:0"/>
+<Edge debugMode="true" fromNode="FOREACH_MAP_VENDOR:0" guiBendpoints="" id="Edge1" inPort="Port 0 (in)" metadata="5a6a8f1b-ac61-4a37-9ae0-cae98d30d1c6" outPort="Port 0 (out)" toNode="BEAN_WRITER0:0"/>
+</Phase>
+</Graph>

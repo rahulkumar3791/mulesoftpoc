@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="89db850e-5304-43d7-8c2d-8fee78c8f525" >
+		<http:listener-connection host="0.0.0.0" port="8082" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="keystore.jks" keyPassword="mule132" password="mule132" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<flow name="self-singed-certFlow" doc:id="be36b256-8200-4dce-b8e4-f4e5d739ea91" >
+		<http:listener doc:name="Listener" doc:id="2300f264-0655-49b6-8986-dacf9008c301" path="/test" config-ref="HTTP_Listener_config"/>
+		<set-payload value='#["Self Signed Cert tested successfully"]' doc:name="Set Payload" doc:id="686a3eed-6423-479e-a221-f40fe61f3179" />
+	</flow>
+</mule>

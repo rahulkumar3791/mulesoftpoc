@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="contact_new" format="csv">
+      <types:shape format="weave" example="examples/contact-1.csv"><![CDATA[%dw 2.0
+
+type contact_new = Array<{|  FirstName: String,   LastName: String,   AccountName: String,   Email: String,   Phone: String|}> {"isQuotedString": "false",
+"header": "true",
+"headerLineNumber": "0"}
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#7ca4115c-0126-44b3-9643-aa6f4203b450">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="contact_new"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

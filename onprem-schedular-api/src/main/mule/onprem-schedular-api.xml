@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="onprem-schedular-apiFlow" doc:id="ec43643d-d9ed-4e26-89bc-182499cc085a" >
+		<scheduler doc:name="Scheduler" doc:id="63418ae0-6b0b-4a71-9783-496885911d02" >
+			<scheduling-strategy >
+				<cron expression="0 0/10 * 1/1 * ? *" />
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="8efdb196-c2d7-4739-8cae-0bef15087869" message="-------Cron running successfully on On-prem server-----------"/>
+	</flow>
+</mule>

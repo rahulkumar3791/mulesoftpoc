@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/ee/jdbc/current/mule-jdbc-ee.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
+	<data-mapper:config name="Map_To_PojoVendor"
+		transformationGraphPath="map_to_pojo_4.grf" doc:name="Map_To_Pojo" />
+
+	<flow name="vendorDataExtractFlow">
+		<logger level="INFO" doc:name="Log Transaction Start Time"
+			message="Get Vendor Data Service Requested at : #[requestTime]" />
+		<set-variable variableName="requestData"
+			value="COUNTRY_CODE: #[payload[0]],MAX_RECORD: #[payload[1]] ."
+			doc:name="Set Request Data" />
+		<logger
+			message="[#[message.inboundProperties['X-Forwarded-For']]][Get Vendor Data][Data Requested for #[requestData]]"
+			level="INFO" doc:name="Log Request Data" />
+		<choice doc:name="Required Parameters Passed?">
+			<when
+				expression="#[payload[0] != null &amp;&amp; payload[0] != &quot;&quot; &amp;&amp; payload[1] != null &amp;&amp; payload[1] != &quot;&quot;]">
+				<remove-variable variableName="cxf_operation"
+					doc:name="Remove cxf_operation Value" />
+				<remove-variable variableName="cxf_service"
+					doc:name="Remove cxf_service Value" />
+				<remove-variable variableName="method" doc:name="Remove method Value" />
+				<expression-component doc:name="Set maxRecord and countryCode Value"><![CDATA[flowVars.maxRecord = payload[1];
+flowVars.countryCode = payload[0];]]></expression-component>
+				<component class="org.util.JudgeValue" doc:name="Judge RecordCount Type" />
+				<choice doc:name="RecordCount Type is Integer?">
+					<when expression="#[payload == true]">
+						<db:stored-procedure config-ref="VendordataLogic"
+							doc:name="Call Database SP for Vendor Details">
+							<db:parameterized-query><![CDATA[{ call XXATC.ATC_IND_INV_VENDOR_TT_PKG.VENDOR_CHANGE_AUDIT_INFO(:p_country_code,:p_max_record,:p_vendor_info) }]]></db:parameterized-query>
+							<db:in-param name="p_country_code" type="VARCHAR"
+								value="#[countryCode]" />
+							<db:in-param name="p_max_record" type="INTEGER"
+								value="#[maxRecord]" />
+							<db:out-param name="p_vendor_info" type="CURSOR" />
+						</db:stored-procedure>
+						<set-variable variableName="recordCount"
+							value="#[payload.p_vendor_info.size()]" doc:name="Set Record Count Value" />
+						<choice doc:name="Vendor Data Found?">
+							<when expression="#[payload.p_vendor_info.size() &gt; 0]">
+								<set-payload value="#[payload.p_vendor_info]"
+									doc:name="Set Payload" />
+								<data-mapper:transform config-ref="Map_To_PojoVendor"
+									doc:name="Map To Pojo" />
+								<logger
+									message="[#[message.inboundProperties['X-Forwarded-For']]][VendorDataExtract][Data successfully extracted for #[requestData] - Count : #[payload.vendor.size()]]"
+									level="INFO" doc:name="Log Vendor Data Extract" />
+								<expression-component doc:name="Set SOAP Response"><![CDATA[import com.atc.model.tarantula.*;
+import java.util.ArrayList;
+import java.util.List;
+GetVendorDataServiceResponse outboundResponse = new GetVendorDataServiceResponse();
+Header header = new Header();
+header.setStatusCode("SUCCESS");
+header.setStatusDescription("SUCCESS");
+outboundResponse.setHeader(header);
+outboundResponse.setVendors(payload);
+payload = outboundResponse;]]></expression-component>
+								<set-variable variableName="responseTime" value="#[server.dateTime]"
+									doc:name="Set Response Time" />
+								<expression-component doc:name="Set Total Time"><![CDATA[flowVars.totalTime = (flowVars.responseTime.dayOfYear-flowVars.requestTime.dayOfYear)*(24*60*60*1000)
++(flowVars.responseTime.hours-flowVars.requestTime.hours)*(60*60*1000)
++(flowVars.responseTime.minutes-flowVars.requestTime.minutes)*(60*1000)
++(flowVars.responseTime.seconds-flowVars.requestTime.seconds)*(1000)
++(flowVars.responseTime.milliSeconds-flowVars.requestTime.milliSeconds);]]></expression-component>
+								<logger
+									message="[#[message.inboundProperties['X-Forwarded-For']]][GetTenantLeaseData][TotalTime : #[totalTime]ms]"
+									level="DEBUG" category="com.atc.esb.tarantula" doc:name="Log Total Time" />
+								<async doc:name="Async">
+									<set-variable variableName="dataDetails"
+										value="#['&quot;Service&quot;: &quot;' + &quot;Get Vendor Data&quot; + '&quot; ,&quot;Requester IP&quot;: &quot;' + message.inboundProperties['X-Forwarded-For']+'&quot; ,&quot;Request Data&quot;:&quot;'+ requestData +'&quot;,&quot;Total Time&quot;:&quot;'+ totalTime + 'ms&quot;,&quot;Record Count&quot;:&quot;'+ recordCount +'&quot;,&quot;Status&quot;: &quot;Success&quot;']"
+										doc:name="Set dataDetails Property" />
+									<set-variable variableName="ip"
+										value="#[message.inboundProperties['X-Forwarded-For']]"
+										doc:name="Set Ip Address" />
+									<expression-transformer
+										expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;, &quot;timestamp&quot;: new java.util.Date().toString(),&quot;interface_number&quot;: &quot;I-0150&quot;,&quot;interface_type&quot;: &quot;SOAP&quot;,&quot;requester_ip&quot;: ip, &quot;status&quot;: [&quot;code&quot;: &quot;0&quot; , &quot;id&quot;: &quot;&quot;, &quot;message&quot;: &quot;COMPLETE&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]"
+										doc:name="Build Audit Map" />
+									<vm:outbound-endpoint exchange-pattern="one-way"
+										path="atc.mule.audit" doc:name="Audit Queue" />
+								</async>
+							</when>
+							<otherwise>
+								<logger
+									message="[#[message.inboundProperties['X-Forwarded-For']]][VendorDataExtract][No data extracted for #[requestData] - Count : 0]"
+									level="INFO" doc:name="Log No Value" />
+								<expression-component doc:name="Set SOAP Reponse"><![CDATA[import com.atc.model.tarantula.GetVendorDataServiceResponse;
+import com.atc.model.tarantula.Header;
+import java.util.ArrayList;
+import java.util.List;
+GetVendorDataServiceResponse outboundResponse = new GetVendorDataServiceResponse();
+Header header = new Header();
+header.setStatusCode("SUCCESS_NO_DATA_FOUND");
+header.setStatusDescription("No Data found");
+outboundResponse.setHeader(header);
+payload = outboundResponse;]]></expression-component>
+								<set-variable variableName="responseTime" value="#[server.dateTime]"
+									doc:name="Set Response Time" />
+								<expression-component doc:name="Set Total Time"><![CDATA[flowVars.totalTime = (flowVars.responseTime.dayOfYear-flowVars.requestTime.dayOfYear)*(24*60*60*1000)
++(flowVars.responseTime.hours-flowVars.requestTime.hours)*(60*60*1000)
++(flowVars.responseTime.minutes-flowVars.requestTime.minutes)*(60*1000)
++(flowVars.responseTime.seconds-flowVars.requestTime.seconds)*(1000)
++(flowVars.responseTime.milliSeconds-flowVars.requestTime.milliSeconds);]]></expression-component>
+								<logger
+									message="[#[message.inboundProperties['X-Forwarded-For']]][GetTenantLeaseData][TotalTime : #[totalTime]ms]"
+									level="DEBUG" category="com.atc.esb.tarantula" doc:name="Log Total Time" />
+								<async doc:name="Async">
+									<set-variable variableName="dataDetails"
+										value="#['&quot;Service&quot;: &quot;' + &quot;Get Vendor Data&quot; + '&quot; ,&quot;Requester IP&quot;: &quot;' + message.inboundProperties['X-Forwarded-For']+'&quot; ,&quot;Request Data&quot;:&quot;'+ requestData +'&quot;,&quot;Total Time&quot;:&quot;'+ totalTime + 'ms&quot;,&quot;Record Count&quot;:&quot;'+ recordCount +'&quot;,&quot;Status&quot;: &quot;SUCCESS_NO_DATA_FOUND&quot;']"
+										doc:name="Set dataDetails Property" />
+									<set-variable variableName="ip"
+										value="#[message.inboundProperties['X-Forwarded-For']]"
+										doc:name="Set Ip Address" />
+									<expression-transformer
+										expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;, &quot;timestamp&quot;: new java.util.Date().toString(),&quot;interface_number&quot;: &quot;I-0150&quot;,&quot;interface_type&quot;: &quot;SOAP&quot;,&quot;requester_ip&quot;: ip, &quot;status&quot;: [&quot;code&quot;: &quot;0&quot; , &quot;id&quot;: &quot;&quot;, &quot;message&quot;: &quot;COMPLETE&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]"
+										doc:name="Build Audit Map" />
+									<vm:outbound-endpoint exchange-pattern="one-way"
+										path="atc.mule.audit" doc:name="Audit Queue" />
+								</async>
+							</otherwise>
+						</choice>
+						<choice doc:name="Choice">
+							<when expression="#[${vendor.mail.enable} == true]">
+								<async doc:name="Async">
+									<set-variable variableName="subject"
+										value="[${current.environment}] [${current.projectname}] [SUCCESS]"
+										doc:name="Set Email Subject" />
+									<set-variable variableName="to" value="${smtp.to.business}"
+										doc:name="Set Email To Address" />
+									<set-variable variableName="body"
+										value="SOAP Request Successfully#[groovy:return &quot;\n\n&quot;]Here is the Request Data:#[groovy:return &quot;\n\n&quot;]#[requestData]#[groovy:return &quot;\n\n&quot;]The Record Count:#[recordCount] .#[groovy:return &quot;\n\n&quot;]"
+										doc:name="Set Email Body" />
+									<expression-transformer
+										expression="#[groovy:[&quot;to_address&quot;:to,&quot;subject&quot;:subject,&quot;body&quot;:body]]"
+										doc:name="Expression" />
+									<vm:outbound-endpoint exchange-pattern="one-way"
+										path="atc.mule.email" doc:name="VM" />
+									<logger message="##### Email notification sent." level="INFO"
+										doc:name="Log Email Notification Sent" />
+								</async>
+							</when>
+							<otherwise>
+								<logger message="##### No email notification required."
+									level="INFO" doc:name="Log No Email Notification Required" />
+							</otherwise>
+						</choice>
+					</when>
+					<otherwise>
+						<expression-component doc:name="Set Response Data"><![CDATA[import com.atc.model.tarantula.GetVendorDataServiceResponse;
+import com.atc.model.tarantula.Header;
+import java.util.ArrayList;
+import java.util.List;
+GetVendorDataServiceResponse outboundResponse = new GetVendorDataServiceResponse();
+Header header = new Header();
+header.setStatusCode("ERROR");
+header.setStatusDescription("The maxRecord is not integer type.");
+outboundResponse.setHeader(header);
+payload = outboundResponse;]]></expression-component>
+						<set-variable variableName="responseTime" value="#[server.dateTime]"
+							doc:name="Set Response Time" />
+						<expression-component doc:name="Total Response Time Calculation"><![CDATA[flowVars.totalTime = (flowVars.responseTime.dayOfYear-flowVars.requestTime.dayOfYear)*(24*60*60*1000)
++(flowVars.responseTime.hours-flowVars.requestTime.hours)*(60*60*1000)
++(flowVars.responseTime.minutes-flowVars.requestTime.minutes)*(60*1000)
++(flowVars.responseTime.seconds-flowVars.requestTime.seconds)*(1000)
++(flowVars.responseTime.milliSeconds-flowVars.requestTime.milliSeconds);]]></expression-component>
+						<logger message="The maxRecord is not integer type." level="INFO"
+							doc:name="Log Required Parameters Error" />
+						<logger
+							message="[#[message.inboundProperties['X-Forwarded-For']]][VendorDataExtract][TotalTime : #[flowVars.totalTime]ms]"
+							level="DEBUG" category="com.atc.esb.tarantula" doc:name="Log Response Time" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise>
+				<expression-component doc:name="Set Response Data"><![CDATA[import com.atc.model.tarantula.GetVendorDataServiceResponse;
+import com.atc.model.tarantula.Header;
+import java.util.ArrayList;
+import java.util.List;
+GetVendorDataServiceResponse outboundResponse = new GetVendorDataServiceResponse();
+Header header = new Header();
+header.setStatusCode("ERROR");
+header.setStatusDescription("The countryCode and maxRecord are required parameters.");
+outboundResponse.setHeader(header);
+payload = outboundResponse;]]></expression-component>
+				<set-variable variableName="responseTime" value="#[server.dateTime]"
+					doc:name="Set Response Time" />
+				<expression-component doc:name="Total Response Time Calculation"><![CDATA[flowVars.totalTime = (flowVars.responseTime.dayOfYear-flowVars.requestTime.dayOfYear)*(24*60*60*1000)
++(flowVars.responseTime.hours-flowVars.requestTime.hours)*(60*60*1000)
++(flowVars.responseTime.minutes-flowVars.requestTime.minutes)*(60*1000)
++(flowVars.responseTime.seconds-flowVars.requestTime.seconds)*(1000)
++(flowVars.responseTime.milliSeconds-flowVars.requestTime.milliSeconds);]]></expression-component>
+				<logger message="Either Country Code And/Or Max Record is/are missing."
+					level="INFO" doc:name="Log Required Parameters Error" />
+				<logger
+					message="[#[message.inboundProperties['X-Forwarded-For']]][VendorDataExtract][TotalTime : #[flowVars.totalTime]ms]"
+					level="DEBUG" category="com.atc.esb.tarantula" doc:name="Log Response Time" />
+			</otherwise>
+		</choice>
+
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<set-variable variableName="responseTime" value="#[server.dateTime]"
+				doc:name="Set Response Time" />
+			<expression-component doc:name="Set Total Time"><![CDATA[flowVars.totalTime = (flowVars.responseTime.dayOfYear-flowVars.requestTime.dayOfYear)*(24*60*60*1000)
+			+(flowVars.responseTime.hours-flowVars.requestTime.hours)*(60*60*1000)
+			+(flowVars.responseTime.minutes-flowVars.requestTime.minutes)*(60*1000)
+			+(flowVars.responseTime.seconds-flowVars.requestTime.seconds)*(1000)
+			+(flowVars.responseTime.milliSeconds-flowVars.requestTime.milliSeconds);]]></expression-component>
+			<choice doc:name="Choice">
+				<when expression="#[exception.cause == null]">
+					<set-variable variableName="varException" value="#[exception.message]"
+						doc:name="Set Exception" />
+				</when>
+				<otherwise>
+					<set-variable variableName="varException" value="#[exception.cause]"
+						doc:name="Set Exception" />
+				</otherwise>
+			</choice>
+			<logger message="Exception:#[varException]" level="ERROR"
+				doc:name="Log Exception Details" />
+			<expression-component
+				doc:name="Set SOAP Response with Exception Details in Status Description"><![CDATA[import com.atc.model.tarantula.*;
+import java.util.ArrayList;
+import java.util.List;
+GetVendorDataServiceResponse outboundResponse = new GetVendorDataServiceResponse();
+Header header = new Header();
+header.setStatusCode("ERROR");
+header.setStatusDescription("an audit log record");
+outboundResponse.setHeader(header);
+outboundResponse.setException(varException);
+payload = outboundResponse;]]></expression-component>
+			<async doc:name="Email Notification">
+				<set-variable variableName="subject"
+					value="[${current.environment}] [${current.projectname}] [Exception Occurred] [Error]"
+					doc:name="Set Email Subject" />
+				<set-variable variableName="to" value="${smtp.to.ops}"
+					doc:name="Set Email To Address" />
+				<set-variable variableName="body"
+					value="Database Exception occurred at #[new java.util.Date().toString()]#[groovy:return &quot;\n\n&quot;]Here is the Exception#[groovy:return &quot;\n\n&quot;]#[exception.cause]#[groovy:return &quot;\n\n&quot;]Please check Mule logs and alerts for more details.#[groovy:return &quot;\n\n&quot;]"
+					doc:name="Set Email Body" />
+				<expression-transformer
+					expression="#[groovy:[&quot;to_address&quot;:to,&quot;subject&quot;:subject,&quot;body&quot;:body]]"
+					doc:name="Build Email Data" />
+				<vm:outbound-endpoint exchange-pattern="one-way"
+					path="atc.mule.email" doc:name="Call Core Email Service" />
+			</async>
+			<async doc:name="Call Audit Service">
+				<set-variable variableName="dataDetails"
+					value="#['&quot;Requester Ip&quot;: &quot;' +message.inboundProperties['X-Forwarded-For']+'&quot;,&quot;Request Data&quot;:&quot;'+ requestData +'&quot;,&quot;Status&quot;: &quot;Error&quot;' + '&quot; , &quot;Exception&quot;: &quot;' + exception.cause +'&quot;']"
+					doc:name="Set DataDetails Property" />
+				<set-variable variableName="ip"
+					value="#[message.inboundProperties['X-Forwarded-For']]" doc:name="Set IP Address" />
+
+				<expression-transformer doc:name="Build Audit Data"
+					expression="#[groovy:[ &quot;service&quot;: &quot;atc-esb-tarantula&quot;, &quot;timestamp&quot;: new java.util.Date().toString(), &quot;interface_number&quot;: &quot;I-0150&quot;, &quot;interface_type&quot;: &quot;SOAP&quot;, &quot;requester_ip&quot;:ip, &quot;status&quot;: [&quot;code&quot;: &quot;E&quot; , &quot;id&quot;: &quot;&quot;, &quot;message&quot;: &quot;Error&quot;], &quot;data&quot;: &quot;\&quot;&quot; + dataDetails + &quot;\&quot;&quot;]]" />
+				<vm:outbound-endpoint exchange-pattern="one-way"
+					path="atc.mule.audit" doc:name="Call Core Audit Service" />
+			</async>
+		</catch-exception-strategy>
+	</flow>
+</mule>

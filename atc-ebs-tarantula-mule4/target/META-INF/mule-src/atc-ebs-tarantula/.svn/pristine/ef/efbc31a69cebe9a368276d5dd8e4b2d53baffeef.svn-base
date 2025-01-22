@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<vm:connector name="VM_Control_Table" validateConnections="true"
+		doc:name="VM" />
+	<flow name="ControlFlow-Read-LastRunDateFlow">
+		<set-variable variableName="flowIndicator" value="#['Reading Last Run Date']"
+			doc:name="flowIndicator" />
+		<db:select config-ref="Oracle_Configuration" doc:name="Database">
+			<db:dynamic-query><![CDATA[SELECT INTERFACE_NAME, to_char(LAST_RUN_DATE, 'DD-Mon-yyyy HH24:MI:SS') "LAST_RUN_DATE" from XXATC.ATC_IND_SVCS_CONTROL_TBL where INTERFACE_NAME='#[flowVars.flowName]']]></db:dynamic-query>
+		</db:select>
+		<set-variable variableName="lastRunDate" value="#[payload[0].LAST_RUN_DATE]"
+			doc:name="lastRunDate" />
+		<logger
+			message="Last Run date for the flow #[flowVars.flowName]  is : #[flowVars.lastRunDate]"
+			level="INFO" doc:name="Log Last Run Date" />
+	</flow>
+	<flow name="ControlFlow-Write-LastRunDateFlow">
+		<vm:inbound-endpoint exchange-pattern="request-response"
+			path="writeLastRunDate" connector-ref="VM_Control_Table" doc:name="VM" />
+		<logger
+			message="Max LastUpdatedDate ==&gt; #[payload.lastRunDate] for flow ==&gt; #[payload.flowName]"
+			level="INFO" doc:name="Log LastRunDate" />
+		<db:update config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[update XXATC.ATC_IND_SVCS_CONTROL_TBL set LAST_RUN_DATE=to_date(#[payload.lastRunDate], 'dd-MM-yyyy HH24:MI:SS') where INTERFACE_NAME=#[payload.flowName]]]></db:parameterized-query>
+		</db:update>
+		<logger message="Update Successful. " level="INFO"
+			doc:name="Log Update successfull" />
+	</flow>
+	<sub-flow name="common-Generate-Batch-Number-subFlow">
+		<set-variable variableName="flowIndicator" value="#['Generating Batch Number']"
+			doc:name="flowIndicator" />
+		<db:select config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[select xxatc.atc_ind_svcs_util_pkg.generate_batch_number(#[flowVars.flowName]) "batchNumber" from dual]]></db:parameterized-query>
+		</db:select>
+	</sub-flow>
+	<flow name="common-heatlhCheck-Flow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="${url.healthCheck}" doc:name="HTTP" />
+		<mule-ss:http-security-filter realm="mule-realm" />
+		<logger message="#['In the healthCheck Flow']" level="INFO"
+			doc:name="Logger" />
+		<flow-ref name="oracle-health-check-subFlow" doc:name="oracle-health-check-subFlow" />
+		<flow-ref name="tarantula-health-check-subFlow" doc:name="tarantula-health-check-subFlow" />
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+health : "GOOD"
+when (flowVars.oracleStatus == 'OK' and flowVars.ttStatus == 'OK')
+otherwise "BAD",
+db:{
+	oracleDB : flowVars.oracleStatus,
+	tarantulaDB: flowVars.ttStatus
+	}
+
+}]]></dw:set-payload>
+		</dw:transform-message>
+	</flow>
+	<flow name="tarantula-health-check-subFlow">
+		<logger message="#['In the tarantula healthCheck Flow']" level="INFO"
+			doc:name="Logger" />
+		<db:select config-ref="Generic_Database_Configuration"
+			doc:name="Database">
+			<db:parameterized-query><![CDATA[select 1]]></db:parameterized-query>
+		</db:select>
+		<set-variable variableName="ttStatus" value="#['OK']"
+			doc:name="TT_Status" />
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<logger message="#['Exception in the TT health check']" level="INFO"
+				doc:name="Logger" />
+			<set-variable variableName="ttStatus" value="#['BAD']"
+				doc:name="TT_Status" />
+		</catch-exception-strategy>
+	</flow>
+	<flow name="oracle-health-check-subFlow">
+		<logger message="#['In the Oracle healthCheck Flow']" level="INFO"
+			doc:name="Logger" />
+		<db:select config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[select 1 from dual]]></db:parameterized-query>
+		</db:select>
+		<set-variable variableName="oracleStatus" value="#['OK']"
+			doc:name="Oracle_Status" />
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<logger message="#['Exception in oracle health check']" level="INFO"
+				doc:name="Logger" />
+			<set-variable variableName="oracleStatus" value="#['BAD']"
+				doc:name="Oracle_Status" />
+		</catch-exception-strategy>
+	</flow>
+	<flow name="successMail_Sub_Flow">
+		<logger message="#['Flow has been completed successfully. Sending Email...']"
+			level="INFO" doc:name="Log Sending Mail" />
+		<choice doc:name="Choice">
+			<when expression="flowVars.flowName == 'TT_PROJ_SITE'">
+				<set-variable variableName="interFaceName"
+					value="#['Project Site Creation']"
+					doc:name="projectSite_Variable" />
+			</when>
+			<when expression="flowVars.flowName == 'TT_PROJ_STATUS'">
+				<set-variable variableName="interFaceName"
+					value="#['Project Status']" doc:name="projectStatus_Variable" />
+			</when>
+			<otherwise>
+				<set-variable variableName="interFaceName"
+					value="#['Purchase Requisition']"
+					doc:name="purchaseRequisitionVariable" />
+			</otherwise>
+		</choice>
+		<set-variable variableName="batchNumber"
+			value="#[flowVars.flowName == 'TT_PR_DETAILS' ? '' : 'Batch Number : '+ flowVars.batchID]"
+			doc:name="BatchID" />
+		<set-variable variableName="mailBody"
+			value="#['Interface: '+flowVars.interFaceName+'\r\n\nRecords Processed : '+flowVars.totalRecords+'\r\n\nRecords Processed Successfully : '+flowVars.successList+'\r\n\nFailed Records  : '+flowVars.failureList+'\r\n\nCurrent LastRunDate : '+flowVars.lastUpdateDate+'\r\n\n'+flowVars.batchNumber]"
+			doc:name="mailBody_Variable" />
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+"to_address": p('emailID'),
+
+"body": flowVars.mailBody,
+
+"subject":'[' ++ p('current.environment') ++ '] [' ++ p('current.projectname') ++ '][' ++ flowVars.interFaceName ++ '][Success] Notification', 
+
+"attachment_name":"attachment.txt",
+
+"attachment_content": flowVars.mailBody
+	
+}  ]]></dw:set-payload>
+		</dw:transform-message>
+		<byte-array-to-object-transformer
+			doc:name="Byte Array to Object" />
+		<vm:outbound-endpoint exchange-pattern="one-way"
+			path="atc.mule.email" doc:name="callEmailService_VM" />
+		<logger message="#['Mail has been sent.']" level="INFO"
+			doc:name="Log Mail Sent" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="HTTPS-GET-common-control-table-flow-lastrunFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="${url.getControlTable}" doc:name="HTTP" allowedMethods="GET" />
+		<mule-ss:http-security-filter realm="mule-realm"></mule-ss:http-security-filter>
+		<logger message="Inside the HTTPS-GET-common-control-table-flow-lastrunFlow"
+			level="INFO" doc:name="Logger" />
+		<flow-ref name="HTTPS-common-control-table-flow-lastrunSub_Flow"
+			doc:name="HTTPS-common-control-table-flow-lastrunSub_Flow" />
+		<exception-strategy ref="exceptionhandlingChoice_Exception_Strategy"
+			doc:name="Reference Exception Strategy" />
+	</flow>
+	<sub-flow name="HTTPS-common-control-table-flow-lastrunSub_Flow">
+		<db:select config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[select INTERFACE_NAME,to_char(LAST_RUN_DATE,'DD-Mon-yyyy HH24:MI:SS') "LAST_RUN_DATE" from xxatc.ATC_IND_SVCS_CONTROL_TBL]]></db:parameterized-query>
+		</db:select>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+		</dw:transform-message>
+		<logger message="End of GET control Table Flow : #[payload]"
+			level="INFO" doc:name="Logger" />
+	</sub-flow>
+	<flow name="HTTPS-POST-common-control-table-flow-lastrunFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="${url.postControlTable}" doc:name="HTTP" allowedMethods="POST" />
+		<mule-ss:http-security-filter realm="mule-realm"></mule-ss:http-security-filter>
+		<logger message="Inside the HTTPS-POST-common-control-table-flow-lastrunFlow"
+			level="INFO" doc:name="Logger" />
+		<dw:transform-message doc:name="Transform Message"
+			metadata:id="a1a775a0-f12d-40b0-90e3-aacac7e47254">
+			<dw:input-payload mimeType="application/json" />
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	INTERFACE_NAME: payload.INTERFACE_NAME,
+	LAST_RUN_DATE: payload.LAST_RUN_DATE
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<logger
+			message="Input Payload #[payload] '\n' UPDATE xxatc.ATC_IND_SVCS_CONTROL_TBL SET LAST_RUN_DATE=to_date(#[payload.LAST_RUN_DATE],'dd-Mon-yyyy HH24:MI:SS') where INTERFACE_NAME=#[payload.INTERFACE_NAME]"
+			level="INFO" doc:name="Logger" />
+		<db:update config-ref="Oracle_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[UPDATE xxatc.ATC_IND_SVCS_CONTROL_TBL SET LAST_RUN_DATE=to_date(#[payload.LAST_RUN_DATE],'dd-Mon-yyyy HH24:MI:SS') where INTERFACE_NAME=#[payload.INTERFACE_NAME]]]></db:parameterized-query>
+		</db:update>
+		<logger message="Response #[payload] POST CT flow has been completed"
+			level="INFO" doc:name="Logger" />
+		<flow-ref name="HTTPS-common-control-table-flow-lastrunSub_Flow"
+			doc:name="HTTPS-common-control-table-flow-lastrunSub_Flow" />
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"Message": "exception Occured the flow, please validate the Input Json struction"
+}]]></dw:set-payload>
+			</dw:transform-message>
+		</catch-exception-strategy>
+	</flow>
+
+
+</mule>

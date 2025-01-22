@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e46c5953-b676-47ff-a601-94880d2979b4" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="72751a0f-3d6e-4df9-9d33-3036c963d903" fetchAllApexSoapMetadata="true">
+		<salesforce:basic-connection username="rahul@ps.sandbox" password="Salesforce@$00211" securityToken="DM6rcK5K3BHksrEdsEudrS3dA" url="https://login.salesforce.com/services/Soap/u/57.0" />
+	</salesforce:sfdc-config>
+	<flow name="salesforce-create-operationsFlow" doc:id="fbe876eb-f5cf-4608-84b8-7e6957e2928a" >
+		<http:listener doc:name="Listener" doc:id="2c145680-e1bc-43f2-8a71-2f7b33e2848e" config-ref="HTTP_Listener_config" path="/create" allowedMethods="POST"/>
+		<ee:transform doc:name="Transform Message" doc:id="4d951e22-3185-4e41-8beb-b324dfcfc2bb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+"name":"Rahul Kumar",
+"billingAddress":"L1 Los Angles",
+"billingCountry":"India",
+"billingState":"Haryana",
+"billingCity":"Gurgaon",
+"billingPostalCode":"122009"
+},
+{
+"name":"Ram Jain",
+"billingAddress":"Bar City Nor",
+"billingCountry":"Australia",
+"billingState":"Sidney",
+"billingCity":"Maco",
+"billingPostalCode":"238796"
+},
+{
+"name":"Lal Mohal",
+"billingAddress":"Sector-10",
+"billingCountry":"Sri Lanka",
+"billingState":"Colombo",
+"billingCity":"Tar",
+"billingPostalCode":"129086"
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="277d64e1-53d8-4035-9d4d-cbdb9a9b443c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(items,index) -> {
+	Name : items.name,
+	BillingStreet : items.billingAddress,
+	BillingCountry : items.billingCountry,
+	BillingState : items.billingState,
+	BillingCity : items.billingCity,
+	BillingPostalCode : items.billingPostalCode
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="33d68dc5-c042-49de-aaab-53aafc1fe271" config-ref="Salesforce_Config" type="Account"/>
+		<ee:transform doc:name="Transform Message" doc:id="4450d152-2ba4-4b04-8516-f3bb054c7ac2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforce-contact-upsert-flow">
+  <http:listener doc:name="Listener" config-ref="HTTP_Listener_config"
+    path="/contacts" allowedMethods="PUT"/>
+		<ee:transform doc:name="Transform Message" doc:id="f0c6c78d-6bfa-4573-8f6b-4ba18a20f5e4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(items,index) -> {
+	FirstName : items.firstName,
+	LastName : items.lastName,
+	Email: items.email,
+	Phone: items.mobile
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert doc:name="Upsert" doc:id="00473e32-82e4-4fd8-9adf-06159717da4a" config-ref="Salesforce_Config" externalIdFieldName="Email" objectType="Contact"/>
+		<ee:transform doc:name="Transform Message" doc:id="934b9a30-bf6b-4a2a-ab4d-5f28f25b849a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+
+</flow>
+
+<flow name="salesforce-accounts-query-flow">
+  <http:listener doc:name="Listener" config-ref="HTTP_Listener_config"
+    path="/accounts"/>
+		<set-variable value="#[attributes.queryParams.billingCity]" doc:name="Set billingCity" doc:id="9c66d759-2c84-45cc-ba48-ae08365debed" variableName="billingCity"/>
+		<choice doc:name="Choice" doc:id="e769f941-020a-468b-afa8-6db8fc37db5d" >
+			<when expression="#[vars.billingCity != null]">
+				<salesforce:query doc:name="Query" doc:id="b5399735-f985-4e31-9ff2-fc49c98de2c5" config-ref="Salesforce_Config">
+					<salesforce:salesforce-query ><![CDATA[Select Name, BillingCountry, BillingCity, BillingState, BillingStreet, BillingPostalCode from Account where BillingCity=':billingCity']]></salesforce:salesforce-query>
+					<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"billingCity" : vars.billingCity
+}]]]></salesforce:parameters>
+				</salesforce:query>
+			</when>
+			<otherwise >
+				<salesforce:query-all doc:name="Query all" doc:id="4304405f-f621-4037-8605-8eb183eac962" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query><![CDATA[Select Name, BillingCountry, BillingCity, BillingState, BillingStreet, BillingPostalCode from Account]]></salesforce:salesforce-query>
+		</salesforce:query-all>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="cb1226f0-307a-405f-855f-f2f30870c772" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+
+</flow>
+
+
+
+<flow name="lookupFlow" doc:id="40d832f7-714d-477c-8986-025e5facc3d2" >
+		<ee:transform doc:name="Transform Message">
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+Mule::lookup('calling-from-lookup-flow', {test:'hello '})]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
+	</flow>
+	<flow name="calling-from-lookup-flow" >
+  <set-payload value='#[payload.test ++ "world"]' doc:name="Set Payload" />
+  <logger level="INFO" doc:name="Logger" message='#[payload]'/>
+</flow>
+	
+	</mule>

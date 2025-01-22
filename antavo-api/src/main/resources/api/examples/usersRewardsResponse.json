@@ -1,0 +1,72 @@
+[
+    {
+        "id": "5fbe6274b37dba5348000022",
+        "name": {
+            "en": "Free Leather Case"
+        },
+        "description": {
+            "en": "Protect your Zennis in style with our deluxe tri-fold eyeglass case. The vegan leather hard-shell case collapses flat for easy storage. It features an embossed Zenni logo on the front with a magnetic closure. It is large enough to hold most eyeglasses and sunglasses. Available in: Zenni teal, navy, black, and white. To clean, wipe with a damp cloth."
+        },
+        "category": "",
+        "price": {
+            "USD": 0
+        },
+        "image_url": "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1610744526-NIz9m.webp"
+    },
+    {
+        "id": "5fd1655885e2da1903000020",
+        "name": {
+            "en": "15% Birthday"
+        },
+        "description": {
+            "en": "15% Birthday"
+        },
+        "category": "",
+        "price": {
+            "USD": 0
+        },
+        "image_url": "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1607558752-LXkF9.jpeg"
+    },
+    {
+        "id": "5fd2922685e2da1200000053",
+        "name": {
+            "en": "Free US Shipping"
+        },
+        "description": {
+            "en": "Free US Shipping"
+        },
+        "category": "",
+        "price": {
+            "USD": 0
+        },
+        "image_url": "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1607635493-QfFQE.png"
+    },
+    {
+        "id": "5fd2932e85e2da1a0300003d",
+        "name": {
+            "en": "$10 Off"
+        },
+        "description": {
+            "en": "$10 Off"
+        },
+        "category": "",
+        "price": {
+            "USD": 0
+        },
+        "image_url": "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1607640517-Jel47.jpeg"
+    },
+    {
+        "id": "5fe2646b0f3029f2b600018b",
+        "name": {
+            "en": "Exclusive Promotion"
+        },
+        "description": {
+            "en": "Exclusion Promotion only for VIPs"
+        },
+        "category": "",
+        "price": {
+            "USD": 0
+        },
+        "image_url": "https://antavo.s3.eu-west-1.amazonaws.com/brands/1756/media/1608672362-zEJi9.png"
+    }
+]

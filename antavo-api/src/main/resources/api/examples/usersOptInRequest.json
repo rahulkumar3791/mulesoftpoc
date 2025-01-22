@@ -1,0 +1,9 @@
+{
+    "customer": "ramtest1",
+    "action": "opt_in",
+    "data": {
+        "email": "rajaram@zenni.com",
+        "first_name":"Rajaram",
+        "last_name": "Pasupathy"
+    }
+}

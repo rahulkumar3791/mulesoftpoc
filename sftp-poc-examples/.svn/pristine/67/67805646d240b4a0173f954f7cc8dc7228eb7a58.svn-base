@@ -1,0 +1,67 @@
+env=qc
+cloudhub.env=qc
+current.environment=QC
+current.project.name=Feeds-Serengeti
+serengeti.payment.current.project.id=I-0120
+serengeti.invoice.current.project.id=I-0121
+current.project.type=SFTP
+
+https.host=0.0.0.0
+https.port=8081
+https.username = serengeti-mule-qc
+https.password = qcPassword01
+
+tls.key.password = atcmule01
+tls.store.password = atcmule01
+
+atc.oracle.sftp.server.host=oradevusdb1.americantower.com
+atc.oracle.sftp.server.port=22
+atc.oracle.sftp.server.user=mule
+atc.oracle.sftp.server.password=luck123
+atc.oracle.sftp.server.outboundPath=/usrlqcSHR/DATA/MULE/AP/SERENGETI/OUT
+atc.oracle.sftp.server.inboundPath=/usrlqcSHR/DATA/MULE/AP/SERENGETI/IN
+atc.oracle.sftp.server.archiveEnable=true
+atc.oracle.sftp.server.archivePath=/usrlqcSHR/DATA/MULE/AP/SERENGETI/ARCHIVE
+atc.oracle.sftp.server.fileNameFilter=*.csv
+
+
+atc.aws.sftp.server.host=172.20.2.101
+atc.aws.sftp.server.port=22
+atc.aws.sftp.server.user=muletest
+atc.aws.sftp.server.password=MuLeTST@ATC1!
+atc.aws.sftp.server.outboundPath=/data/dev
+atc.aws.sftp.server.inboundPath=
+atc.aws.sftp.server.archiveEnable=true
+atc.aws.sftp.server.archivePath=/data/dev/Archive
+atc.aws.sftp.server.fileNameFilter=*TEST*
+
+
+
+ws.url = https://sandboxtracker.serengetilaw.com/WebServices/APDataExchange.svc?singleWsdl
+ws.service=TAPDataExchangeWebService
+ws.port=APDataExchangeBasic
+ws.address=https://sandboxtracker.serengetilaw.com/WebServices/APDataExchange.svc/APDataExchangeBasic
+ws.user=Xv7oVKy8dL
+ws.password=jkd9djdk@jjd
+ws.formatdate=dd-MMM-yy
+ws.fileDelimiter=Comma
+
+serengeti.payment.cron.expression=0 0/20 * 1/1 * ? *
+serengeti.invoice.cron.expression=0 0/20 * 1/1 * ? *
+
+audit.email.db.host=10.202.10.81
+audit.email.db.port=1555
+audit.email.db.user=xxmule
+audit.email.db.sid=FMWQC
+audit.email.db.password=xxmule01
+
+to.sftp.email=anjana.tripathi@americantower.com;Harsha.Pateelu@AmericanTower.com;Satyakanth.Abbaraju@AmericanTower.com;Sireesha.Kalluru@AmericanTower.com
+success.mail.enable=true
+
+sftp.response.timeout=60000
+source.atc.maxConnectionPoolSize=1
+
+success.delivery.required=Y
+failed.delivery.required=Y
+
+

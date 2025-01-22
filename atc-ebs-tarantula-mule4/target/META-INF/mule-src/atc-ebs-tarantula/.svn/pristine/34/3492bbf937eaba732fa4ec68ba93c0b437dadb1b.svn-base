@@ -1,0 +1,21 @@
+package com.atc.model.tarantula;
+
+public class GetLandLeaseDataServiceResponse {
+
+	private Header header;
+	private LandLeaseDetails landLeaseDetails;
+	
+	public Header getHeader() {
+		return header;
+	}
+	public void setHeader(Header header) {
+		this.header = header;
+	}
+	public LandLeaseDetails getLandLeaseDetails() {
+		return landLeaseDetails;
+	}
+	public void setLandLeaseDetails(LandLeaseDetails landLeaseDetails) {
+		this.landLeaseDetails = landLeaseDetails;
+	}	
+	
+}

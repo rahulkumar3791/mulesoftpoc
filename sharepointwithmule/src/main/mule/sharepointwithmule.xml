@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:sharepoint="http://www.mulesoft.org/schema/mule/sharepoint"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sharepoint http://www.mulesoft.org/schema/mule/sharepoint/current/mule-sharepoint.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="483a35b2-496e-4791-9698-1a73397e0306" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<sharepoint:sharepoint-online-config name="Sharepoint_Sharepoint_online" doc:name="Sharepoint Sharepoint online" doc:id="db1742a2-462d-4f9c-8c43-919ec046710e" >
+		<sharepoint:online-connection siteUrl="https://kumarrahul56.sharepoint.com" onlineUsername="RahulKumar@kumarrahul56.onmicrosoft.com" onlinePassword="Rahul@$00211" />
+	</sharepoint:sharepoint-online-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="9cc04a15-d62f-4229-8eee-ff209986d804" />
+	<flow name="sharepointwithmuleFlow" doc:id="10842116-f8f9-43a9-b223-4968dd9f7dbb" >
+		<http:listener doc:name="Listener" doc:id="d3826d71-a00d-4290-8b98-23b2d9b4ea16" path="/sharepoint" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="675835f7-2b0b-4593-9bbc-4e11160105d4" message="==========flow===="/>
+		<file:read doc:name="Read" doc:id="6d56aa18-d4e7-4ce7-88a9-9a05ce71659d" config-ref="File_Config" path="D:\Mule-2024\sharepoint\anb.txt"/>
+		<sharepoint:file-add doc:name="File add" doc:id="1333a518-112d-4265-82b6-09f086a7170c" config-ref="Sharepoint_Sharepoint_online" fileServerRelativeUrl="/shared Document/test/abc.txt">
+			<sharepoint:file-content-stream ><![CDATA[#[payload]]]></sharepoint:file-content-stream>
+		</sharepoint:file-add>
+	</flow>
+</mule>

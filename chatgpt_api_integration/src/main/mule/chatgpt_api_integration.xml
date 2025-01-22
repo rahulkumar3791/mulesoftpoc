@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7ee14282-f729-47d1-b62e-bcf6d9797626" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="19947b0b-91fc-4b8c-9dcb-bdd997313754" responseTimeout="1000000">
+		<http:request-connection protocol="HTTPS" host="api.openai.com" />
+	</http:request-config>
+	<flow name="chatgpt_api_integrationFlow" doc:id="85478fe6-e629-461d-b41c-9d692ec498a1" >
+		<http:listener doc:name="Listener" doc:id="90a80194-1161-4cac-b94e-e1de12ed8169" path="/chatgpt" config-ref="HTTP_Listener_config"/>
+		<ee:transform doc:name="Transform Message" doc:id="a257d8e3-1d27-4b7c-bf87-95498d0d2100" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+          {
+        "role": "user",
+        "content": payload.content
+      }
+    ]
+  }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="560851bb-127f-4251-a0d7-e3c0fd0d2e53" variableName="items"/>
+		<http:request method="POST" doc:name="Request" doc:id="f88ff62c-b2be-42cf-b97f-d0402262e747" url="https://api.openai.com/v1/chat/completions" config-ref="HTTP_Request_configuration">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer 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",
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="bbfa4b1b-251b-423a-a977-0b88adb06169" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Question:": vars.items.messages.content,
+	"Answer:" : payload.choices.message.content
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

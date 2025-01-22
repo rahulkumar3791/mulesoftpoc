@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="healthcheckFlow" doc:id="9b392e00-48fb-4091-8379-3f90117f0731" >
+		<http:listener doc:name="Listener" doc:id="d73ac915-ae49-4e34-aadd-4586109705cb" config-ref="HTTP_Listener_config" path="/api/health"/>
+		<http:basic-security-filter doc:name="Basic security filter" doc:id="529bec10-daac-49fa-a1fb-d88c32b0b9e8" realm="mule">
+			<http:security-providers >
+				<http:security-provider value="memory-provider" />
+			</http:security-providers>
+		</http:basic-security-filter>
+		<logger level="INFO" doc:name="Logger" doc:id="c6654b4e-9bd3-4113-b656-4fbbc4d40fdf" message="####healthFlow endpoint starts###"/>
+		<flow-ref doc:name="health:\\atc-oracle-r11-sftp-health" doc:id="a399f494-259a-406e-bcdd-22bfd636f3d1" name="health:\\atc-oracle-r11-sftp-health"/>
+		<flow-ref doc:name="health:\\atc-aws-server-health" doc:id="f73f2c44-1605-4217-ac74-740291115da6" name="health:\\atc-aws-server-health"/>
+		<logger level="INFO" doc:name="Logger" doc:id="85d86525-e884-4ab7-97ab-6a4cd8d2ff15" message="----ATCOracleR11Server and AWS Server Health status---"/>
+		<ee:transform doc:name="Transform Message" doc:id="292c731f-7506-4ac4-9eee-90bdda7b9831">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+var atcoraclesftp = vars.atcoraclesftp as String default null
+var atcawsserversftp = vars.atcawsserversftp as String default null
+var health = if(atcoraclesftp == "GOOD" and atcawsserversftp == "GOOD") "GOOD" else "BAD" default "GOOD"
+
+output application/json
+---
+{
+  health: health,
+  service: p('current.project.name') ++ '-' ++ p('current.environment'),
+  interface_type: p('currrent.project.type') default "SFTP",
+  serengeti_payment_interface_id: p('serengeti.payment.current.project.id') default "I-0120",
+  serengeti_invoce_interface_id: p('serengeti.invoice.current.project.id') default "I-0121",
+  services: {
+  	atc_oracle_R11_server_host: p('atc.oracle.sftp.server.host') default "",
+  	atc_oracle_r11_sftp: atcoraclesftp,
+  	atc_aws_server_host: p('atc.aws.sftp.server.host') default "",
+  	atc_aws_sftp: atcawsserversftp
+   }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="health:\\atc-oracle-r11-sftp-health" doc:id="6b315916-02fb-4aae-85e3-b703904b8926" >
+		<sftp:list doc:name="List" doc:id="edce030d-27ce-4898-9d4e-f22f3e7d2454" config-ref="SFTP_ATC_ORACLE_Config" directoryPath="#['/']"/>
+		<set-variable value="#['GOOD']" doc:name="atc-oracle-sftp-source-server-response" doc:id="d34cd137-a5f3-4e67-8784-349f2f58ba26" variableName="atcoraclesftp"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="95a5a0fb-d881-4218-9c58-4d35a2192c8d" >
+				<set-variable value="#['BAD']" doc:name="atc-oracle-sftp-source-server-response" doc:id="628ec077-bc07-4663-8832-8f45a896d4d9" variableName="atcoraclesftp"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="health:\\atc-aws-server-health" doc:id="83d103fa-76f9-4d6d-9790-26822db9dd55" >
+		<sftp:list doc:name="List" doc:id="91f03c5d-7964-4a3a-874b-1b18be5482c7" config-ref="SFTP_Config_AWS_Source" directoryPath="#['/']"/>
+		<set-variable value="#['GOOD']" doc:name="atc-aws-server-response" doc:id="a5ff6c11-fe55-407b-8224-9e1b86fb7ac0" variableName="atcawsserversftp"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c7ade2b2-8ec7-42ae-b919-2cce3e1b7fe4" >
+				<set-variable value="#['BAD']" doc:name="atc-aws-server-response" doc:id="6983354c-bafa-4861-b545-34c57f07c2d7" variableName="atcawsserversftp"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

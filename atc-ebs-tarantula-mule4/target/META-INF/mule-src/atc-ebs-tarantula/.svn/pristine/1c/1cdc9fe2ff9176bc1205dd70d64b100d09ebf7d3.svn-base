@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:https="http://www.mulesoft.org/schema/mule/https" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+	xmlns:smtps="http://www.mulesoft.org/schema/mule/smtps" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:ss="http://www.springframework.org/schema/security"
+	xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:spring="http://www.springframework.org/schema/beans"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/ee/jdbc/current/mule-jdbc-ee.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/smtps/current/mule-smtps.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+
+	<spring:beans profile="local">
+		<context:property-placeholder location="classpath:resources-local.properties" />
+	</spring:beans>
+
+	<https:connector name="DefaultHttpsConnector" doc:name="HTTP-HTTPS">
+		<https:tls-key-store path="keystore" keyAlias="atc_mule"
+			keyPassword="${tls.key.password}" storePassword="${tls.store.password}" />
+	</https:connector>
+
+	<spring:beans>
+		<ss:authentication-manager alias="authenticationManager">
+			<ss:authentication-provider>
+				<ss:user-service id="userService">
+					<ss:user name="${https.username}" password="${https.password}"
+						authorities="ROLE_ADMIN" />
+				</ss:user-service>
+			</ss:authentication-provider>
+		</ss:authentication-manager>
+	</spring:beans>
+
+	<mule-ss:security-manager name="securityManager"
+		doc:name="Spring Security Provider">
+		<mule-ss:delegate-security-provider
+			name="memory-provider" delegate-ref="authenticationManager" />
+	</mule-ss:security-manager>
+
+	<http:request-config name="HTTP_Request_Configuration"
+		protocol="HTTPS" host="${atc.core.host}" port="${atc.core.port}"
+		doc:name="HTTP Request Configuration">
+		<http:basic-authentication username="${atc.core.user}"
+			password="${atc.core.password}" preemptive="true" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_Configuration"
+		protocol="HTTPS" host="0.0.0.0" port="${https.port}" doc:name="HTTP Listener Configuration">
+		<tls:context>
+			<tls:key-store path="keystore" keyPassword="${tls.key.password}"
+				password="${tls.store.password}" />
+		</tls:context>
+	</http:listener-config>
+
+</mule>

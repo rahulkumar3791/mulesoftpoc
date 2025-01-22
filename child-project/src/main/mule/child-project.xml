@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="74b6a48a-573d-48cd-b466-4b1d6d7ccb12" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="57bf69c0-32ea-44d0-aa0b-4322c6dae239" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="rahuldb"/>
+	</db:config>
+	<flow name="child-projectFlow" doc:id="10494482-8365-4ddd-a827-6de6c473d1cc" >
+		<http:listener doc:name="Listener" doc:id="b0c8b1a9-c933-478a-ac0d-f462e099b8af" config-ref="HTTP_Listener_config" path="/child"/>
+		<db:select doc:name="Select" doc:id="5686db5c-002f-49b7-8ad9-6380d641a07b" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from persons]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="4be9e127-3241-4a78-80d8-78a7d2c162a6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

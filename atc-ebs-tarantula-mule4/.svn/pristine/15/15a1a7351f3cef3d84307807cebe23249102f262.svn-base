@@ -1,0 +1,31 @@
+package com.atc.ebs.lease.tenant;
+
+import javax.jws.WebParam;
+import javax.jws.WebResult;
+import javax.jws.WebService;
+import javax.xml.bind.annotation.XmlElement;
+
+import com.atc.model.tarantula.GetTenantLeaseDataServiceResponse;
+
+@WebService
+public interface GetTenantLeaseData {
+
+	public @WebResult(name="response")GetTenantLeaseDataServiceResponse getTenantLeaseData(
+			@WebParam(name="siteId") @XmlElement(required=true,nillable=false) String siteId, 
+			@WebParam(name="customerName1") @XmlElement(required=true,nillable=false) String customerName1,
+			@WebParam(name="customerName2") String customerName2,
+			@WebParam(name="customerName3") String customerName3,
+			@WebParam(name="customerName4") String customerName4,
+			@WebParam(name="customerName5") String customerName5,
+			@WebParam(name="customerName6") String customerName6,
+			@WebParam(name="customerName7") String customerName7,
+			@WebParam(name="customerName8") String customerName8,
+			@WebParam(name="customerName9") String customerName9,
+			@WebParam(name="customerName10") String customerName10,
+			@WebParam(name="customerName11") String customerName11,
+			@WebParam(name="customerName12") String customerName12,
+			@WebParam(name="customerName13") String customerName13,
+			@WebParam(name="customerName14") String customerName14,
+			@WebParam(name="customerName15") String customerName15
+			) throws Exception;
+}

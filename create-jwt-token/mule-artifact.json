@@ -1,0 +1,26 @@
+{
+	"configs": [
+		"config.xml",
+		"create-jwt-token.xml"
+	],
+	"redeploymentEnabled": true,
+	"name": "create-jwt-token",
+	"requiredProduct": "MULE_EE",
+	"minMuleVersion": "4.3.0",
+	"bundleDescriptorLoader": {
+		"attributes": {
+		
+		},
+		"id": "mule"
+	},
+	"classLoaderModelLoaderDescriptor": {
+		"id": "mule",
+		"attributes": {
+			"exportedPackages":["com.jwt.token"]
+		}
+	},
+	"secureProperties": [
+		"tls.key.password",
+		"tls.store.password"
+	 ]
+}

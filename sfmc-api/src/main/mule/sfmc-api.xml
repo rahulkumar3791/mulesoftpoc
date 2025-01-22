@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="5fbcf86a-f255-4a3a-94a1-0cda3bc736fb" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration_token" doc:name="HTTP Request configuration" doc:id="99b4c971-34b6-4dd8-95e3-b105def481b3" >
+		<http:request-connection protocol="HTTPS" host="mc6d2y508d0nyp6-mp5t7b45-f91.auth.marketingcloudapis.com" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration_event" doc:name="HTTP Request configuration" doc:id="00e6cb67-e975-43e4-bf06-3103cbbd4a8d" >
+		<http:request-connection protocol="HTTPS" host="mc6d2y508d0nyp6-mp5t7b45-f91.rest.marketingcloudapis.com" />
+	</http:request-config>
+	<flow name="sfmc-apiFlow" doc:id="237ee904-e284-4133-92c3-48b5d8874956" >
+		<http:listener doc:name="Listener" doc:id="fb386169-ba3c-483b-ad98-c97dfdb1f518" path="/api/rest/sfmc" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fb33c7d3-4665-4483-9955-e2124ad0c2e6" message="=====START====="/>
+		<ee:transform doc:name="Transform Message" doc:id="e5a850a0-2460-4678-b292-75f67a6c7440" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "grant_type": "client_credentials",
+    "client_id": "g6dg7zu96wned89ksgn8tbve",
+    "client_secret": "mRwdbS4EGDgmABGJbhmWN8J4",
+    "account_id": "534002336",
+    "scope": "journeys_execute journeys_read journeys_write list_and_subscribers_read"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="a15f00ba-db74-447e-9f2e-85831f2bbf5c" config-ref="HTTP_Request_configuration_token" url="https://mc6d2y508d0nyp6-mp5t7b45-f91.auth.marketingcloudapis.com/v2/token"/>
+		<set-variable value="#[output application/json --- payload]" doc:name="payloadVal" doc:id="c135ea68-3a4b-4e37-9fa7-725c6bb9083e" variableName="payloadVal"/>
+		<ee:transform doc:name="Transform Message" doc:id="57546449-c2cc-4c07-92b2-f239e4cfc908" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "ContactKey": "test@gmail.com",
+    "EventDefinitionKey": "APIEvent-c38d1d46-398d-3976-b56c-eeaad7ca15c8",
+    "Data": {
+        "SubscriberKey": "hello@gmail.com",
+         "email": "test@gmail.com",
+         "First Name": "Rahul",
+         "Last Name": "Kumar"
+   
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="87a24fcd-1491-46ea-a5ed-27ae9e07d633" url="https://mc6d2y508d0nyp6-mp5t7b45-f91.rest.marketingcloudapis.com/interaction/v1/events" config-ref="HTTP_Request_configuration_event">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.payloadVal.access_token
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="e0b5fe1d-c91c-4091-a38f-ef9b9963ec5d" message="===FINISH==="/>
+	</flow>
+</mule>

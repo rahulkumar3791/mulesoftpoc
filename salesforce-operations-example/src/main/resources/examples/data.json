@@ -1,0 +1,14 @@
+[
+{
+"firstName":"Rahul",
+"lastName": "Kumar",
+"email":"rahul@gmail.com",
+"mobile": "23487374"
+},
+{
+"firstName":"Adam",
+"lastName": "Smith",
+"email":"adam@gmail.com",
+"mobile": "8765555"
+}
+]

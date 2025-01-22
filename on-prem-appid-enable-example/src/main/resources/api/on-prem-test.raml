@@ -1,0 +1,28 @@
+#%RAML 1.0
+title: on-prem-api
+
+types:
+  news: !include /datatypes/news.raml
+  all-news: !include /datatypes/all-news.raml
+
+/on-prem:
+  /news:
+    get:
+      description: This endpoint for get all news details.
+      responses:
+        200:
+          body:
+            application/json:
+              type: news[]
+              example:
+                !include /examples/all-news.json
+    /{newsId}:
+      get:
+        description: This endpoint for get specific news details.
+        responses:
+          200:
+            body:
+              application/json:
+                type: news
+                example:
+                  !include /examples/news.json

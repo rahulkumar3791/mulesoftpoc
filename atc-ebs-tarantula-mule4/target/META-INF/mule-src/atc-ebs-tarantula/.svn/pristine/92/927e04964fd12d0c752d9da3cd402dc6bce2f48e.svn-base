@@ -1,0 +1,22 @@
+package com.atc.model.tarantula;
+
+import java.io.Serializable;
+
+public class GetLandLeaseRentDataServiceResponse implements Serializable {
+
+	private Header header;
+	private LandLeaseRentHist landLeaseRentHist;
+	
+	public Header getHeader() {
+		return header;
+	}
+	public void setHeader(Header header) {
+		this.header = header;
+	}
+	public LandLeaseRentHist getLandLeaseRentHist() {
+		return landLeaseRentHist;
+	}
+	public void setLandLeaseRentHist(LandLeaseRentHist landLeaseRentHist) {
+		this.landLeaseRentHist = landLeaseRentHist;
+	}
+}

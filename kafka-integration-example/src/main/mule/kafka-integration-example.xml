@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="327fee71-d0a5-4cb6-83cd-94da4cc433de" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<kafka:producer-config name="Apache_Kafka_Producer_configuration" doc:name="Apache Kafka Producer configuration" doc:id="019b452e-b17e-4028-b474-731a781f99d3" >
+		<kafka:producer-plaintext-connection endpointIdentificationAlgorithm="https">
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="localhost:9092" />
+			</kafka:bootstrap-servers>
+		</kafka:producer-plaintext-connection>
+	</kafka:producer-config>
+	<kafka:consumer-config name="Apache_Kafka_Consumer_configuration" doc:name="Apache Kafka Consumer configuration" doc:id="20d8cd42-6636-45d7-9c87-f0b076292698" >
+		<kafka:consumer-plaintext-connection >
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="localhost:9092" />
+			</kafka:bootstrap-servers>
+			<kafka:topic-patterns >
+				<kafka:topic-pattern value="kafkaTest" />
+			</kafka:topic-patterns>
+		</kafka:consumer-plaintext-connection>
+	</kafka:consumer-config>
+	<flow name="kafka-integration-publishFlow" doc:id="f365bd8a-2c3b-436f-b65f-55d59beba6d5" >
+		<scheduler doc:name="Scheduler" doc:id="4bc95af5-5836-4576-b653-b6cf01b03a75" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<kafka:publish doc:name="Publish" doc:id="6bb5e916-8de7-4cb7-b0a0-8e18a49540b0" config-ref="Apache_Kafka_Producer_configuration" topic="kafkaTest" key="#[now()]">
+			<kafka:message ><![CDATA[#["Publishing data to Kafka"]]]></kafka:message>
+		</kafka:publish>
+		<logger level="INFO" doc:name="Logger" doc:id="68e81706-a42c-49ee-bf44-87e3d48a929b" message="=====Kafka publisher flow completed======"/>
+	</flow>
+	<flow name="kafka-integration-consumerFlow" doc:id="807e547a-fac0-4bbb-927d-797951a11481" >
+		<kafka:message-listener doc:name="Message listener" doc:id="caf1b3fc-d82c-47cc-a2f7-7cf8ef41b5f0" config-ref="Apache_Kafka_Consumer_configuration"/>
+		<logger level="INFO" doc:name="Logger" doc:id="40390f13-1267-46c3-a51a-079e9cc3d96a" message="#[payload]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="ffa1948e-c086-4e34-a8e3-25040ef2914b" message="======consumed successfully======"/>
+	</flow>
+</mule>

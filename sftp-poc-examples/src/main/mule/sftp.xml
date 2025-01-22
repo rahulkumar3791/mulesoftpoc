@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	<flow name="sftp-Flow" doc:id="9d06f52c-f47a-49e1-88e7-891240285a6c" >
+		<logger level="INFO" doc:name="Logger" doc:id="a288bbef-3cce-4fae-836e-828dffe73a7f" message="###SFTP flow is started ####"/>
+		<ee:transform doc:name="Transform Message" doc:id="a746042c-e43e-4698-a4c0-af66a74bb8a0" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="ip" ><![CDATA[server.ip as String default "0.0.0.0"]]></ee:set-variable>
+				<ee:set-variable variableName="successList" ><![CDATA[[]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<sftp:list doc:name="ListFromSFTPServer" doc:id="fe7a6033-10d9-41aa-bba2-a0c1a16d8b3a" config-ref="SFTP_Config" directoryPath="#[p('sftp.server.outboundPath')]">
+			<sftp:matcher filenamePattern="#[p('sftp.server.fileNameFilter')]"/>
+		</sftp:list>
+		<choice doc:name="Choice" doc:id="a77e31ff-2cf6-4463-bffe-bb0a897f5923" >
+			<when expression="#[sizeOf(payload) &gt; 0 and payload != null]">
+				<flow-ref doc:name="sftp-files-iterationFlow" doc:id="8c3ea50c-e1b9-4409-bc12-e9cb2b162455" name="sftp-files-iterationFlow"/>
+				<ee:transform doc:name="Transform Message" doc:id="7c826ebb-c323-4f15-a48a-a7b52ab135e0">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"totalFileTransferred" : size(vars.successList),
+	"status": "Success",
+	"flow" : "SFTP"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="d79f0895-a852-48f4-b60e-b0a2836cb87d" message="##### No Record Found in SFTP server for Processing ########"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0face82f-7db4-4bce-9995-ebb6debec773" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="e5be0f95-67ed-4b71-a762-0334f435a3ea" message="#[error]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="sftp-files-iterationFlow" doc:id="715fc3e3-e09f-43d8-9478-13da27571dcd" >
+		<try doc:name="Try" doc:id="6b15bdc7-75a1-48b5-9cbb-4ce2cd88bfd0" >
+			<foreach doc:name="For Each" doc:id="0488ff14-e4b7-4d3a-ac16-b73ae962af70" collection="payload.typedAttributes.*path">
+				<flow-ref doc:name="sftp-business-flow" doc:id="1a88134a-0d25-4802-ad93-1583460d8794" name="sftp-business-flow"/>
+			</foreach>
+		</try>
+	</flow>
+	<flow name="sftp-business-flow" doc:id="32a236c5-c75d-4a0f-9afe-b59998724670" >
+		<set-variable value="#[payload]" doc:name="Set filePathName" doc:id="f1394156-754c-4255-9925-5fc5785e7cde" variableName="filePathName"/>
+		<try doc:name="Try" doc:id="c8500399-ccf3-4ac3-8d3e-469d5fea4b74" >
+		<sftp:read doc:name="Read" doc:id="1954010c-23b2-4615-998b-03c86a2433de" config-ref="SFTP_Config" path="#[payload]"/>
+			<set-variable value="#[attributes.fileName]" doc:name="Set originalFilename" doc:id="0341419d-96c4-4e28-89ab-214dfaaea60f" variableName="originalFilename"/>
+			<set-variable value="#[payload]" doc:name="Set actualFileData" doc:id="9d0b2c77-16cc-4140-bd46-920d27ca4a57" variableName="actualPayload"/>
+			<flow-ref doc:name="file-transfer-flow" doc:id="a2f566d3-be1c-4703-b8c9-e1840fe48028" name="file-transfer-flow"/>
+			<logger level="INFO" doc:name="logger" doc:id="d7536e9a-9477-4701-9b0e-aa7444187906" message="#['File transfer done successfully']" />
+				<error-handler>
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="18173427-0be6-45d5-906b-3da5fcefbfe6" type="ANY">
+					<logger level="INFO" doc:name="Logger" doc:id="7904a78c-03db-45f0-a220-c409efff0f86" message="#[error]"/>
+
+					</on-error-continue>
+				</error-handler>
+		</try>
+	</flow>
+	<flow name="file-transfer-flow" doc:id="7944e19a-1d51-4ae9-b7a7-3b0751509a62" >
+			<sftp:write doc:name="WriteAtSFTPDestination" doc:id="3bb7041a-d95c-4acc-94f6-655853318a3a" config-ref="SFTP_Config" path="#[p('sftp.server.inboundPath') ++ '/' ++ ((vars.originalFilename  default '' ) replace ' ' with '_')]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="02e153f5-5282-4e96-ac91-5504fa79e8ab" message="### file placed successfully at SFTP IN path ####"/>
+		<choice doc:name="Choice" doc:id="675d95e0-3d0b-4cd4-9dfe-1950c1ed95a1" >
+			<when expression="#[p('sftp.server.archiveEnable') as Boolean == true]">
+				<sftp:write doc:name="Write_SFTP_Archive_Path" doc:id="472282ff-4c9d-49c3-891a-0563f81e0fac" config-ref="SFTP_Config" path="#[p('sftp.server.archivePath') ++ '/' ++  (vars.originalFilename default '')]">
+					<sftp:content ><![CDATA[#[vars.actualPayload]]]></sftp:content>
+				</sftp:write>
+				<logger level="INFO" doc:name="Logger" doc:id="ae6217e1-ee5e-4574-b72d-9a2eb2c9758d" message="##### File archiving completed on SFTP Destination server."/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="baff6b57-fdc4-4ead-9ffb-9bb505d11a48" message="##### File archiving not required on SFTP Destination server ####"/>
+			</otherwise>
+		</choice>
+		<sftp:delete doc:name="DeleteFromSFTPSourcePath" doc:id="5f488e4b-4190-4a16-a6fd-cf0956b361f5" config-ref="SFTP_Config" path="#[p('sftp.server.outboundPath') ++ '/' ++  (vars.originalFilename default '')]"/>
+		<ee:transform doc:name="Transform Message" doc:id="350372cf-2abb-4b87-8ad6-5503d339140f" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="successList" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.successList + vars.filePathName default vars.originalFilename]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	
+	</flow>
+</mule>

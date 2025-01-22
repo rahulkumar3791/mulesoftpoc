@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	
+	<flow name="call-audit-serviceFlow" doc:id="78778fe0-e98d-4a29-a65b-8b5a94bc3d89" >
+		<db:insert doc:name="Audit Data Insert" doc:id="c864858c-8983-47fa-ae88-5c4e2156e179" config-ref="Email_Audit_Database_Config">
+			<db:sql >insert into atc_services_audit(requester_ip, created_on, service_name, interface_number, interface_type, value) values(:requester_ip, sysdate, :service, :interface_number, :interface_type, :value)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  "requester_ip": payload.requester_ip,
+  "service": payload.service,
+  "interface_number":payload.interface_number,
+  "interface_type":payload.interface_type,
+  "value": payload.data
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Data Inserted" doc:id="4c2a7190-7bd0-4f01-95b1-2b78aeace635" message="##### Audit Data Inserted Successfully ######"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="29235bb1-62f8-4fa4-819f-fee56d8bed09" >
+				<logger level="INFO" doc:name="Logger" doc:id="a7ce7d17-3c6f-4f1e-b45d-87d5560836ae" message="########call-audit-serviceFlow#######"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="call-email-serviceFlow" doc:id="0fc2dca4-84a1-4f60-8f86-feee4d0cccdb" >
+		<db:insert doc:name="Email Data Insert" doc:id="da2b47d9-43ae-4a0d-a8d9-3c489235cbd8" config-ref="Email_Audit_Database_Config">
+			<db:sql >insert into atc_services_email (ENVIORNMENT,INTERFACE_NUMBER,SUCCESS,SUBJECT,DELIVERY_REQUIRED,EMAIL_CONTENT,EMAIL_RECEPIENTS,CREATED_ON)
+values(:ENVIORNMENT,:INTERFACE_NUMBER,:SUCCESS,:SUBJECT,:DELIVERY_REQUIRED,:EMAIL_CONTENT,:EMAIL_RECEPIENTS,sysdate)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"ENVIORNMENT":vars.environment,
+	"INTERFACE_NUMBER": vars.DATA.interface_number default "I-436",
+	"SUCCESS": vars.status,
+	"SUBJECT" : vars.subject,
+	"DELIVERY_REQUIRED":vars.deliveryRequired,
+	"EMAIL_CONTENT": payload,
+	"EMAIL_RECEPIENTS" : vars.to
+	
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Data Inserted" doc:id="6bbeab0a-006f-4f55-807b-6c8ecbd59bd0" message="##### Email Data Inserted Successfully ######"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5abb77a0-8ef0-426e-8046-48a0aadf485b" >
+				<logger level="INFO" doc:name="Logger" doc:id="6915dd4c-64fa-4966-8448-14e3432f7971" message="########call-email-serviceFlow###########"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<choice-exception-strategy
+		name="exceptionhandlingChoice_Exception_Strategy_purchaseRequisition">
+		<catch-exception-strategy doc:name="Catch_Exception_Strategy"
+			when="#[exception.causedBy(org.mule.api.MessagingException)]">
+			<logger level="INFO" doc:name="Logger" message="#[exception.getStackTrace()]" />
+			<logger
+				message="Records Failed due to Messaging exception  ---------------&gt;#[payload]"
+				level="INFO" doc:name="Logger" />
+			<set-variable variableName="failure_reason" value="#[exception.cause.message]"
+				doc:name="Variable" />
+			<set-variable variableName="PR_LINE_ID" value="#[payload.PR_LINE_ID]"
+				doc:name="Set PR_LINE_ID" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{   PR_NUMBER: payload.PR_NUMBER,
+	failure_reason: flowVars.failure_reason[0..50],
+	TTID: payload.TTID,
+	PR_LINE_ID : payload.PR_LINE_ID
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<db:insert config-ref="Oracle_Configuration" doc:name="Database">
+				<db:dynamic-query><![CDATA[INSERT INTO XXATC.ATC_TT_FAILEDRECORDS(PR_NUMBER,PR_LINE_ID, TT_ID,FLOW_NAME,FAILURE_REASON) 
+VALUES ('#[payload.PR_NUMBER]',#[payload.PR_LINE_ID],#[payload.TTID],'#[flowVars.flowName]','#[payload.failure_reason]')]]></db:dynamic-query>
+
+			</db:insert>
+			<expression-component doc:name="Add PR_LINE_ID in failureList"><![CDATA[flowVars.failureList.add(flowVars.PR_LINE_ID) ;]]></expression-component>
+			<object-to-string-transformer doc:name="Object to String" />
+		</catch-exception-strategy>
+
+		<catch-exception-strategy doc:name="Catch_Exception_Strategy"
+			when="#[exception.causedBy(org.mule.api.expression.ExpressionRuntimeException)]">
+			<logger level="INFO" doc:name="Logger"
+				message="Records Failed due to runtime exception  ---------------&gt;#[payload]" />
+			<set-variable variableName="failure_reason" value="#[exception.cause.message]"
+				doc:name="Variable" />
+			<set-variable variableName="PR_LINE_ID" value="#[payload.PR_LINE_ID]"
+				doc:name="Set PR_LINE_ID" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{   PR_NUMBER: payload.PR_NUMBER,
+	failure_reason: flowVars.failure_reason[0..50],
+	TTID: payload.TTID,
+	PR_LINE_ID : payload.PR_LINE_ID
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<db:insert config-ref="Oracle_Configuration" doc:name="Database">
+				<db:dynamic-query><![CDATA[INSERT INTO XXATC.ATC_TT_FAILEDRECORDS(PR_NUMBER,PR_LINE_ID, TT_ID,FLOW_NAME,FAILURE_REASON) 
+VALUES ('#[payload.PR_NUMBER]',#[payload.PR_LINE_ID],#[payload.TTID],'#[flowVars.flowName]','#[payload.failure_reason]')]]></db:dynamic-query>
+
+
+			</db:insert>
+			<expression-component doc:name="Add PR_LINE_ID in failureList"><![CDATA[flowVars.failureList.add(flowVars.PR_LINE_ID);]]></expression-component>
+			<object-to-string-transformer doc:name="Object to String" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="Catch Exception Strategy">
+			<set-variable variableName="errMsg"
+				value="Exception occurred at #[new java.util.Date().toString()]#[&quot;\r\n&quot;] Interface : #[flowVars.flowName] #[&quot;\r\n&quot;]  Exception: #[(exception.cause!=null)?(exception.cause.message):exception]"
+				doc:name="errMsg" />
+			<set-variable variableName="fullErrorMsg"
+				value="Exception occurred at #[new java.util.Date().toString()] #[&quot;\r\n&quot;] Interface : #[flowVars.flowName] #[&quot;\r\n&quot;]  Exception Details: #[org.mule.util.ExceptionUtils.getFullStackTrace(exception)]"
+				doc:name="fullErrorMsg" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+"to_address": p('emailID'),
+
+"body": flowVars.errMsg,
+
+"subject":'[' ++ p('current.environment') ++ '] [' ++ p('current.projectname') ++ '] [FAILURE] Notification', 
+
+"attachment_name":"attachment.txt",
+
+"attachment_content": flowVars.fullErrorMsg
+	
+}  
+]]></dw:set-payload>
+			</dw:transform-message>
+			<byte-array-to-object-transformer
+				doc:name="Byte Array to Object" />
+			<http:request config-ref="HTTP_EmailNotification" path="/email"
+				method="POST" doc:name="HTTP" />
+		</catch-exception-strategy>
+	</choice-exception-strategy>
+</mule>

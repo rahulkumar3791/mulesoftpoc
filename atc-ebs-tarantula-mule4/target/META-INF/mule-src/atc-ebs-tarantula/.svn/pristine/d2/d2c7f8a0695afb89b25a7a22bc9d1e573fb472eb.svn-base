@@ -1,0 +1,156 @@
+package com.atc.model.tarantula;
+import javax.xml.bind.annotation.XmlElement;
+
+public class Vendor {
+	private String vendorCode;
+	private String vendorName;
+	private String startDateActive; 
+	private String endDateActive;
+	private String circle;
+	private String vendorSiteCode;
+	private String addressLine1;
+	private String addressLine2;
+	private String addressLine3;
+	private String city;
+	private String state;
+	private String zip;
+	private String prefix;
+	private String firstName;
+	private String middleName;
+	private String lastName;
+	private String emailAddress;
+	private String phone;
+	private String vendorType;
+	
+	public String getVendorCode() {
+		return vendorCode;
+	}
+	public void setVendorCode(String vendorCode) {
+		this.vendorCode = vendorCode;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getVendorName() {
+		return vendorName;
+	}
+	public void setVendorName(String vendorName) {
+		this.vendorName = vendorName;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getStartDateActive() {
+		return startDateActive;
+	}
+	public void setStartDateActive(String startDateActive) {
+		this.startDateActive = startDateActive;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getEndDateActive() {
+		return endDateActive;
+	}
+	public void setEndDateActive(String endDateActive) {
+		this.endDateActive = endDateActive;
+	}
+	public String getCircle() {
+		return circle;
+	}
+	public void setCircle(String circle) {
+		this.circle = circle;
+	}
+	public String getVendorSiteCode() {
+		return vendorSiteCode;
+	}
+	public void setVendorSiteCode(String vendorSiteCode) {
+		this.vendorSiteCode = vendorSiteCode;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getAddressLine1() {
+		return addressLine1;
+	}
+	public void setAddressLine1(String addressLine1) {
+		this.addressLine1 = addressLine1;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getAddressLine2() {
+		return addressLine2;
+	}
+	public void setAddressLine2(String addressLine2) {
+		this.addressLine2 = addressLine2;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getAddressLine3() {
+		return addressLine3;
+	}
+	public void setAddressLine3(String addressLine3) {
+		this.addressLine3 = addressLine3;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getCity() {
+		return city;
+	}
+	public void setCity(String city) {
+		this.city = city;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getState() {
+		return state;
+	}
+	public void setState(String state) {
+		this.state = state;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getZip() {
+		return zip;
+	}
+	public void setZip(String zip) {
+		this.zip = zip;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getPrefix() {
+		return prefix;
+	}
+	public void setPrefix(String prefix) {
+		this.prefix = prefix;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getFirstName() {
+		return firstName;
+	}
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getMiddleName() {
+		return middleName;
+	}
+	public void setMiddleName(String middleName) {
+		this.middleName = middleName;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getLastName() {
+		return lastName;
+	}
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getEmailAddress() {
+		return emailAddress;
+	}
+	public void setEmailAddress(String emailAddress) {
+		this.emailAddress = emailAddress;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getPhone() {
+		return phone;
+	}
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+	@XmlElement(required=true,nillable=false)
+	public String getVendorType() {
+		return vendorType;
+	}
+	public void setVendorType(String vendorType) {
+		this.vendorType = vendorType;
+	}
+	
+}

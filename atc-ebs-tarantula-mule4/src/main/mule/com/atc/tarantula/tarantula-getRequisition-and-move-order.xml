@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="tarantula-getRequisitionAndMoveOrderFlow" doc:id="3acf1b57-c268-439f-91f0-9dc2a4ac6b3a" >
+		<set-variable value="${ebs.tarantula.maxRecords}" doc:name="Set maxRecord" doc:id="0d9d92ee-ac52-448e-9b76-4877163b0541" variableName="maxRecord"/>
+		<set-variable value='#[{ "requestData" : vars.requestData }]' doc:name="Set requestData" doc:id="dc5ac80b-2190-417c-9393-5d4944881028" variableName="requestData"/>
+		<db:select doc:name="Query Data" doc:id="8a463c44-1703-4cb0-aedf-3cb5d940086e" config-ref="Oracle_Configuration">
+			<db:sql >SELECT BOQ_ID, BOQ_LINE_ID, GLOBAL_SITE_ID, ITEM_CODE, to_char(NEED_BY_DATE, 'DD-MON-YY') NEED_BY_DATE, QUANTITY, 
+MOVE_ORDER_NUMBER, MOVE_ORDER_STATUS, PR_NO, PR_STATUS, PO_NUMBER, PO_STATUS, PROCESS_STATUS, ERROR_DESCRIPTION
+FROM XXATC.ATC_INV_IND_TARANTULA_DEMAND_V WHERE ROWNUM &lt;= :maxRecord</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"maxRecord": vars.maxRecord
+}]]]></db:input-parameters>
+		</db:select>
+		<set-variable value="#[sizeOf(payload)]" doc:name="Set Record Count Value" doc:id="1e1c666d-931d-4818-8605-384b92422c2f" variableName="recordCount"/>
+		<choice doc:name="Data Found?" doc:id="578d3bce-df40-4b12-a584-1b1061245184" >
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<foreach doc:name="For Each" doc:id="f0701d65-0436-4cdf-b0d1-de7b0ff27df3" >
+					<ee:transform doc:name="Transform Message" doc:id="2211cc61-fad6-4624-bd7c-321d6c59e078" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	quantity : payload.QUANTITY,
+	boqId : payload.BOQ_ID,
+	boqLineId : payload.BOQ_LINE_ID,
+	errorDescription : payload.ERROR_DESCRIPTION,
+	globalSiteId : payload.GLOBAL_SITE_ID,
+	itemCode : payload.ITEM_CODE,
+	moveOrderNumber : payload.MOVE_ORDER_NUMBER,
+	moveOrderStatus : payload.MOVE_ORDER_STATUS,
+	needByDate : payload.NEED_BY_DATE,
+	processStatus : payload.PROCESS_STATUS,
+	prNo : payload.PR_NO,
+	prStatus : payload.PR_STATUS,
+	poNumber : payload.PO_NUMBER,
+	poStatus : payload.PO_STATUS
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="dd32e512-6c8f-48a4-9415-d5d483717017" message="#['[GetOrders][Data successfully extracted - Count :'++ sizeOf(payload) ++ ']']" />
+				</foreach>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Log No Data Found" doc:id="50005e03-9609-4e66-8bda-c872aee3b383" message="------------------[GetOrders][No data extracted - Count : 0]------------------"/>
+			</otherwise>
+		</choice>
+		<set-variable value="#[now().milliseconds]" doc:name="Set responseTime" doc:id="8aa4ff85-d18c-490f-a920-f4bf33ee26d4" variableName="responseTime"/>
+		<set-variable value="#[(vars.responseTime.dayOfYear-vars.requestTime.dayOfYear)*(24*60*60*1000)+(vars.responseTime.hours-vars.requestTime.hours)*(60*60*1000)+(vars.responseTime.minutes-vars.requestTime.minutes)*(60*1000)+(vars.responseTime.seconds-vars.requestTime.seconds)*(1000)+(vars.responseTime.milliSeconds-vars.requestTime.milliSeconds)]" doc:name="Total Response Time Calculation" doc:id="4d4cdcdb-636b-448a-9bcf-ce20b485270b" variableName="totalTime"/>
+		<logger level="INFO" doc:name="Log Total Time" doc:id="44458e06-dc21-412e-a7ed-f85fd5201a7f" message="#['[SetOrders][TotalTime :' ++ vars.totalTime ++ ']']"/>
+		<set-variable value="#['&quot;service&quot;: &quot;' + &quot;Get Requisition And Move Order&quot; + '&quot; ,&quot;requesterIp&quot;: &quot;' ++ vars.ip ++'&quot; ,&quot;Request Data&quot;:&quot;'++ vars.requestData ++'&quot;,&quot;totalTime&quot;:&quot;'++ vars.totalTime ++ 'ms&quot;,&quot;Record Count&quot;:&quot;'++ vars.recordCount ++'&quot;,&quot;status&quot;: &quot;Success&quot;']" doc:name="Set dataDetails" doc:id="94fb4169-e388-464f-a97f-5d72ba12191a" variableName="dataDetails"/>
+		<ee:transform doc:name="Audit Payload" doc:id="34486d1e-e91b-4764-b884-63ece64bcbda" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "service": p('current.project.name'),
+   "timestamp": now() as String {format: "dd-mm-yyyy'T'hh:mm:ss"},
+   "interface_number":'I-0102' ,
+   "interface_type": "SOAP",
+   "requester_ip" : vars.ip,
+   "data": {
+   	      "status": ["code": "0" , "id": "", "message": "COMPLETE"],
+   	      "dataDetails" : vars.dataDetails
+         }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="call-audit-serviceFlow" doc:id="f66839a0-7383-482c-a3e1-9aaa2c4205e9" name="call-audit-serviceFlow"/>
+	</flow>
+</mule>

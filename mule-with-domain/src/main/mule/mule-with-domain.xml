@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="1d5d0797-4c25-4c02-a861-df60ee42866f" >
+		<http:request-connection protocol="HTTPS" host="localhost" port="8082" tlsContext="TLS_Context"/>
+	</http:request-config>
+	<flow name="mule-with-domainFlow" doc:id="0f2722b6-7688-4e51-b4c8-52772263714d" >
+		<http:listener doc:name="Listener" doc:id="a747b789-a4c1-4a13-a85e-10aa76148c67" config-ref="HTTP_Listener_config" path="/domain"/>
+		<set-payload value='#["Domain project config used Successfully !"]' doc:name="Set Payload" doc:id="3e7a22b4-6031-469a-99fb-5432db8fe2b4" />
+		<logger level="INFO" doc:name="Logger" doc:id="3f3d4328-f134-4497-b887-dff0cc031b5a" message="#[payload]"/>
+	</flow>
+</mule>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <!-- <http:listener-config name="news-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${api.port}" />
+    </http:listener-config> -->
+    <apikit:config name="news-api-config" api="news-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="56b6a13d-f0ff-4ca1-b715-a629c5129e00" flowRef="news-api-main" />
+	<configuration-properties doc:name="Configuration properties" doc:id="febfd0c1-a9ea-4aa5-874c-e8423aee7ff8" file="common.properties" />
+	<flow name="news-api-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/rest/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="news-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="news-api-console">
+        <http:listener config-ref="HTTP_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="news-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\news:news-api-config">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    id: "new001",
+    author: "investors.com",
+    title: "Futures: Chip Giant Says Growth 'Close'; LULU Soars On Earnings",
+    description: "Dow Jones futures rose solidly early Wednesday, along with S&P 500 futures and Nasdaq futures. Micron Technology (MU) and Lululemon Athletica (LULU) headlined earnings overnight. The stock market rally attempt had slim losses Tuesday, but the major indexes he…",
+    url: "https://biztoc.com/x/754f091faaefd98c",
+    urlToImage: "https://c.biztoc.com/p/754f091faaefd98c/og.webp",
+    publishedAt: "2023-03-29T09:08:06Z",
+    content: "Dow Jones futures rose solidly early Wednesday, along with S&amp;P 500 futures and Nasdaq futures. Micron Technology (MU) and Lululemon Athletica (LULU) headlined earnings overnight.The stock market … [+312 chars]"
+  }, 
+  {
+    id: "new003",
+    author: "Philip Hedderman",
+    title: "Review: Hyundai’s sleek Ioniq 6 brings refinement to a whole new level",
+    description: "AFTER the phenomenal success of the Ioniq 5, it was inevitable that Hyundai was going to expand the premium EV brand.",
+    url: "https://www.independent.ie/life/motoring/car-reviews/review-hyundais-sleek-ioniq-6-brings-refinement-to-a-whole-new-level-42409020.html",
+    urlToImage: "https://www.independent.ie/life/motoring/car-reviews/6139c/42409016.ece/AUTOCROP/w1240h700/sn%20Ioniq6%20x",
+    publishedAt: "2023-03-29T08:54:07Z",
+    content: "AFTER the phenomenal success of the Ioniq 5, it was inevitable that Hyundai was going to expand the premium EV brand.\r\nBut nobody could have expected that their latest arrival would be such a talking… [+5629 chars]"
+  }, 
+  {
+    id: "new002",
+    author: "Jyoti Narayan and Krystal Hu",
+    title: "Musk, Experts Urge Pause On AI Systems, Citing 'Risks To Society'",
+    description: "Elon Musk and a group of artificial intelligence experts and industry executives are calling for a six-month pause in developing systems more powerful than OpenAI's newly launched GPT-4, in an open letter citing potential risks to society and humanity.",
+    url: "https://www.ibtimes.com/musk-experts-urge-pause-ai-systems-citing-risks-society-3681341",
+    urlToImage: "https://d.ibtimes.com/en/full/4438643/ons-2022-oil-gas-conference.jpg",
+    publishedAt: "2023-03-29T08:42:29Z",
+    content: "Tesla founder Elon Musk attends Offshore Northern Seas 2022 in Stavanger, Norway August 29, 2022. NTB/Carina Johansen via REUTERS ATTENTION EDITORS - THIS IMAGE WAS PROVIDED BY A THIRD PARTY. NORWAY … [+2946 chars]"
+  }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\news\(newsId):news-api-config">
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="newsId">attributes.uriParams.'newsId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "new001",
+  author: "investors.com",
+  title: "Futures: Chip Giant Says Growth 'Close'; LULU Soars On Earnings",
+  description: "Dow Jones futures rose solidly early Wednesday, along with S&P 500 futures and Nasdaq futures. Micron Technology (MU) and Lululemon Athletica (LULU) headlined earnings overnight. The stock market rally attempt had slim losses Tuesday, but the major indexes he…",
+  url: "https://biztoc.com/x/754f091faaefd98c",
+  urlToImage: "https://c.biztoc.com/p/754f091faaefd98c/og.webp",
+  publishedAt: "2023-03-29T09:08:06Z",
+  content: "Dow Jones futures rose solidly early Wednesday, along with S&amp;P 500 futures and Nasdaq futures. Micron Technology (MU) and Lululemon Athletica (LULU) headlined earnings overnight.The stock market … [+312 chars]"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+
+	<spring:config name="Spring_Config" doc:name="Spring Config"
+		doc:id="4d19bfe2-09c6-4005-baa5-a9d77f025028" files="beans.xml" />
+	<spring:security-manager doc:name="Spring Security manager"
+		doc:id="75b2823c-5ad4-4a9c-89e8-6e493ecaef94">
+		<spring:delegate-security-provider
+			name="memory-provider" delegate-ref="authenticationManager" />
+	</spring:security-manager>
+	<configuration-properties doc:name="Configuration properties"
+		doc:id="14013569-64b8-46ad-8b91-8ac50990bbe2" file="resources-${prop.env}.properties" />
+	<tls:context name="TLS_Context" doc:name="TLS Context"
+		doc:id="0a061725-cd6f-4800-a80c-da1bce813ac4">
+		<tls:trust-store insecure="true" />
+		<tls:key-store path="keystore" keyPassword="${tls.key.password}"
+			password="${tls.store.password}" />
+	</tls:context>
+	<http:listener-config name="HTTP_Listener"
+		doc:name="HTTP Listener config" doc:id="6dd1502e-0913-47fb-8869-d4fe9b8489d2">
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="${https.port}" tlsContext="TLS_Context">
+		</http:listener-connection>
+	</http:listener-config>
+	<configuration doc:name="Configuration"
+		doc:id="71540349-e543-45ac-8776-d4be156e25cc" defaultErrorHandler-ref="default-error-handler">
+	</configuration>
+	<db:config name="Email_Audit_Database_Config" doc:name="Database Config" doc:id="5ce1d7b9-e6de-46eb-9b65-65ef488dc0e7" >
+		<db:oracle-connection host="${email.audit.db.host}" port="${email.audit.db.port}" user="${email.audit.db.user}" password="${email.audit.db.password}" instance="${email.audit.db.instance}" />
+	</db:config>
+	<global-property doc:name="Global Property" doc:id="973e0cf9-3b75-44dc-be4a-96ebd883a28f" name="prop.env" value="dev" />
+	<db:config name="Oracle_Configuration" doc:name="Database Config" doc:id="6cfeeb38-b48b-4fc6-a44a-26c5b18e506d" >
+		<db:oracle-connection host="${tarantula.db.host}" port="${tarantula.db.port}" user="${tarantula.db.user}" password="${tarantula.db.password}" instance="${tarantula.db.instance}" />
+	</db:config>
+	<db:config name="SQL_Server_Database_Config" doc:name="Database Config" doc:id="4dc7a993-98eb-47fa-bf16-f0ac49118e2d" >
+		<db:mssql-connection host="${sql.server.ip}" port="${sql.server.port}" user="${sql.server.user}" password="${sql.server.password}" databaseName="${sql.server.dbName}" />
+	</db:config>
+</mule>

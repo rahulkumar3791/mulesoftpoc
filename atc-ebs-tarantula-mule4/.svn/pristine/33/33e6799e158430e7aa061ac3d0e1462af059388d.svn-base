@@ -1,0 +1,16 @@
+package com.atc.model.tarantula;
+
+import java.util.List;
+
+public class TenantLeaseDetails {
+
+	private List<TenantLeaseData> tenantLeaseData;
+
+	public List<TenantLeaseData> getTenantLeaseData() {
+		return tenantLeaseData;
+	}
+
+	public void setTenantLeaseData(List<TenantLeaseData> tenantLeaseData) {
+		this.tenantLeaseData = tenantLeaseData;
+	}
+}

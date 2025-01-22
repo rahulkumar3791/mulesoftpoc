@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="date-format-pocFlow" doc:id="61c744b3-1e13-42a3-a3f7-4693d5f8cee8" >
+		<scheduler doc:name="Scheduler" doc:id="1cde4ca1-9779-4e0c-9851-48fd4f9cdd2d" >
+			<scheduling-strategy >
+				<fixed-frequency timeUnit="HOURS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="Transform Message" doc:id="ae0733fc-daed-44df-83f3-c4aa1d103402" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "message": "2023-07-02 09:13:07.0"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="ace4273c-1b5d-4477-95eb-d49b60d81f39" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(payload.message as LocalDateTime {format : "yyyy-MM-dd HH:mm:ss.S"} - ("P$(7)D" as Period)) as LocalDateTime {format : "yyyy-MM-dd HH:mm:ss.S"} as String {format : "dd-MMM-yy hh.mm.ss.SSSSSSSSS a"}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="244025c7-53cd-4445-af7d-ef6889d4e67f" message="#[payload]"/>
+	</flow>
+</mule>

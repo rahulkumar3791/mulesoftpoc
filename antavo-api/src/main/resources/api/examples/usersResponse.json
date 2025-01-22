@@ -1,0 +1,37 @@
+{
+    "id": "ramtest1",
+    "optin_at": 1607458546,
+    "last_login_at": null,
+    "updated_at": 1607458546,
+    "first_name": "Rajaram",
+    "last_name": "Pasupathy",
+    "email": "rajaram@zenni.com",
+    "birth_date": null,
+    "gender": null,
+    "language": null,
+    "nickname": null,
+    "status": "active",
+    "score": 0,
+    "spent": 0,
+    "reserved": 0,
+    "spendable": 0,
+    "pending": 0,
+    "properties": null,
+    "purchase_total": 250,
+    "purchase_count": 3,
+    "purchase_last_date": "2020-12-08",
+    "tiers": [
+        {
+            "id": "friend",
+            "name": "Friend",
+            "since": "2020-12-08T20:31:20+00:00",
+            "points": null,
+            "structure": {
+                "id": "5fbe6dfdb37dbab34700001f",
+                "name": "Zenni Optical Tier Structure"
+            }
+        }
+    ],
+    "referrer": null,
+    "referrals": 0
+}

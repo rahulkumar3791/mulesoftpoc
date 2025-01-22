@@ -1,0 +1,108 @@
+prop.env=prod
+cloudhub.env=Production
+current.environment=PROD
+current.project.name=Atc-Tarantula
+interface.id.project.status=I-0356
+interface.id.project.site=I-0355
+interface.id.purchase.requisition=I-0357
+interface.id.project.status.ttid=I-0360
+interface.id.project.site.ttid=I-0359
+interface.id.purchase.requisition.ttid=I-0358
+current.project.type=HTTP
+
+smtp.to.operations=rahul.kumar@americantower.com
+delivery.required=True
+
+tls.key.password=atcmule01
+tls.store.password=atcmule01
+
+https.password=devPassword01
+https.port=8088
+https.username=muleteam
+https.host=0.0.0.0
+
+
+tls.key.password = atcmule01
+tls.store.password = atcmule01
+
+jdbc.source.server.host = 10.202.10.53 
+jdbc.source.server.port = 1537
+jdbc.source.server.user = xxatc
+jdbc.source.server.password = xxatc01
+jdbc.source.server.instance = GBDEV
+
+#OCDEV
+db.host=10.202.10.53
+db.port=1537
+db.instance=GBDEV
+db.user=xxatc
+db.password=xxatc01
+
+poll.projects.frequency = 300000000
+
+
+ebs.we.maxRecords = 10
+quartz.delete.data.corn.expression = 0 57 10 ? * 6
+
+jdbc.colo.host.dev = 10.1.40.12
+jdbc.colo.host.qc = 10.1.60.12
+ebs.tarantula.maxRecords = 10
+
+## -----DEC 08,2015 -----####
+vendor.mail.enable=true
+smtp.to.ops=pratik.priyadarshi@americantower.com
+smtp.to.business=pratik.priyadarshi@americantower.com
+######
+#EBS-TT Oracle and Tarantula Interface Properties#
+cron.schedule=Off
+projectstatus.cron.expr= 0 15 10 15 * ? 
+purchaserequisition.cron.expr= 0 0/1 * 1/1 * ? *
+projectcreation.cron.expr= 0 15 10 15 * ?
+
+#projectstatus.cron.expr= 00 00 0/4 * * ? 
+#purchaserequisition.cron.expr= 00 0/1 * * * ?
+#projectcreation.cron.expr= 00 0/1 * * * ?
+
+db.host=10.202.10.53
+db.port=1537
+db.instance=GBDEV
+db.user=xxatc
+db.password=xxatc01
+
+#mssql.server=uattardb02.americantower.com
+#mssql.port=1433
+#mssql.database=SSATCAPP
+mssql.user=xxmule
+mssql.password=adhw%Tghkasj
+emailID=pratik.priyadarshi@americantower.com
+
+#jdbc.source.url=jdbc:sqlserver://5NDXMV1\SQLEXPRESS:1433;databaseName=tarantula;user=xxmule;password=Apps@1234
+#jdbc.sql.server.url=jdbc:sqlserver://10.1.80.76:1433;databaseName=SSATCInterface_S2O_DEV;user=xxmule;password=adhw%Tghkasj
+#sql.server.dbName=SSATCInterface_S2O_Integration
+#sql.server.port=1433
+#sql.server.ip=10.200.81.76
+#sql.server.user=xxmule
+#sql.server.password=adhw%Tghkasj
+sql.server.dbName=SSATCInterface
+sql.server.port=1433
+sql.server.ip=10.200.81.76
+sql.server.user=newmule
+sql.server.password=newmule@123
+#sql.server.ip=10.200.66.161
+
+#To enable debug mode for Bulk Loading
+purchaserequisition.debug=false
+purchaserequisition.batch_size=10000
+purchaserequisition.fetch_size=5000
+projectstatus.debug=false
+projectsite.debug=false
+url.healthCheck=/api/rest/health
+url.getControlTable=/getInterfaceDetails
+url.postControlTable=/postInterfaceDetails
+
+#Email Aduit DB details
+email.audit.db.host=fmw-prd-db.americantower.com
+email.audit.db.port=1552
+email.audit.db.user=xxmule
+email.audit.db.password=<Ops team>
+email.audit.db.instance=FMWPRD

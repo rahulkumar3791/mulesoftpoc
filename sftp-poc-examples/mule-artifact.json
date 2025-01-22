@@ -1,0 +1,28 @@
+{
+	"configs": [
+		
+		"config.xml",
+		"endpoints.xml",
+		"healthcheck.xml",
+		"sftp.xml"
+	],
+	"redeploymentEnabled": true,
+	"name": "sftp-poc-examples",
+	"requiredProduct": "MULE_EE",
+	"minMuleVersion": "4.2.1",
+	"classLoaderModelLoaderDescriptor": {
+		"id": "mule",
+		"attributes": {
+			"exportedResources": [
+				"beans.xml",
+				"pubring.gpg",
+				"secring.gpg"
+			]
+		}
+	},
+	"secureProperties": [
+		"tls.key.password",
+		"tls.store.password",
+		"https.password"
+	]
+}
